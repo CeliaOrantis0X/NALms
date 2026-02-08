@@ -1,0 +1,307 @@
+/* =========================================================
+   日系少女 UI · 百合向 v1.1
+   Theme: Soft Yuri / Intimate / Transparent
+   ========================================================= */
+
+
+/* ========================
+   Global
+   ======================== */
+
+QMainWindow,
+QDialog {
+    background: qlineargradient(
+        x1:0, y1:0, x2:0, y2:1,
+        stop:0 #FFF7FB,
+        stop:1 #F3ECF8
+    );
+    color: #3B2A3F;
+    font-family: "霞鹜文楷", "Microsoft YaHei UI", "PingFang SC";
+    font-size: 11pt;
+}
+
+
+/* ========================
+   Card Container
+   ======================== */
+
+QWidget[class="card"] {
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(220,180,210,0.45);
+    border-radius: 16px;
+}
+
+QWidget[class="card"] QLabel {
+    background: transparent;
+}
+
+
+/* ========================
+   Avatar
+   ======================== */
+
+QLabel#Avatar {
+    background-color: rgba(255,255,255,0.6);
+    border: 1px dashed rgba(220,180,210,0.55);
+    border-radius: 14px;
+    color: #B59BB8;
+}
+
+
+/* ========================
+   Titles
+   ======================== */
+
+QLabel[class="titlePrimary"] {
+    font-size: 18pt;
+    font-weight: bold;
+    color: #3B2A3F;
+}
+
+QLabel[class="titleSecondary"] {
+    font-size: 12pt;
+    color: #9B7FA0;
+}
+
+QLabel[class="sectionTitle"] {
+    font-size: 13pt;
+    font-weight: bold;
+    color: #5A3F5F;
+}
+
+
+/* ========================
+   GroupBox
+   ======================== */
+
+QGroupBox {
+    border: none;
+    margin-top: 6px;
+    font-size: 11pt;
+    color: #9B7FA0;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    padding-left: 6px;
+    padding-bottom: 4px;
+    color: #B395B8;
+}
+
+
+/* ========================
+   Labels
+   ======================== */
+
+QLabel[class="fieldLabel"] {
+    color: #5a4a6a;
+    font-size: 12px;
+}
+
+QLabel[class="fieldValue"] {
+    color: #2e2435;
+    font-size: 13px;
+}
+
+
+/* ========================
+   Line / Combo Inputs
+   ======================== */
+
+QLineEdit,
+QComboBox {
+    background: rgba(255,255,255,0.75);
+    color: #2e2435;
+    border: 1px solid rgba(160,140,180,0.4);
+    border-radius: 6px;
+    padding: 4px 6px;
+}
+
+QLineEdit::placeholder {
+    color: #999;
+}
+
+
+/* =====================================
+   🌸 QTextEdit — Yuri Manuscript Card
+===================================== */
+
+QTextEdit {
+    background-color: rgba(255,255,255,0.75);
+    color: #4a365d;
+
+    border: 1px solid #e4d7f3;
+    border-radius: 10px;
+
+    padding: 10px;
+
+    selection-background-color: #f2dfff;
+    selection-color: #4a365d;
+
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+/* hover 微浮起 */
+
+QTextEdit:hover {
+    border-color: #d7c3f0;
+}
+
+/* focus 呼吸光 */
+
+QTextEdit:focus {
+    border: 1px solid #c9b0ea;
+    background-color: rgba(255,255,255,0.85);
+}
+
+/* placeholder */
+
+QTextEdit::placeholder {
+    color: #b9a7cd;
+    font-style: italic;
+}
+
+
+/* ========================
+   Archive List
+   ======================== */
+
+QListWidget#archiveList {
+    background: rgba(255,255,255,0.55);
+    border: 1px solid rgba(180,150,200,0.6);
+    border-radius: 8px;
+    padding: 4px;
+    color: #3a2f45;
+}
+
+QListWidget#archiveList::item {
+    padding: 6px 8px;
+    border-radius: 6px;
+}
+
+QListWidget#archiveList::item:selected {
+    background: qlineargradient(
+        x1:0,y1:0,x2:1,y2:0,
+        stop:0 #f3d9ff,
+        stop:1 #e7c4ff
+    );
+    color: #3a2f45;
+}
+
+
+/* ========================
+   Buttons (Base)
+   ======================== */
+
+QPushButton {
+    background: rgba(255,255,255,0.65);
+    border: 1px solid rgba(220,180,210,0.45);
+    border-radius: 10px;
+    padding: 5px 16px;
+    color: #5A3F5F;
+}
+
+QPushButton:hover {
+    background: rgba(240,200,230,0.35);
+}
+
+QPushButton:pressed {
+    background: rgba(240,200,230,0.55);
+}
+
+QPushButton:disabled {
+    color: #AAA;
+    background: rgba(245,240,245,0.6);
+}
+
+
+/* =====================================
+   🌸 Petal Button System
+===================================== */
+
+QPushButton[role="primary"] {
+    background-color: #e6d9f5;
+    color: #5a3b6e;
+    border-radius: 12px;
+    padding: 6px 18px;
+    border: 1px solid #d6c4ea;
+    font-weight: bold;
+}
+
+QPushButton[role="primary"]:hover {
+    background-color: #f2e9fb;
+}
+
+QPushButton[role="secondary"] {
+    background-color: rgba(255,255,255,0.7);
+    color: #8a6fa3;
+    border-radius: 10px;
+    padding: 5px 14px;
+    border: 1px solid #eadff6;
+}
+
+QPushButton[role="secondary"]:hover {
+    background-color: #f7f1fd;
+    color: #5a3b6e;
+}
+
+QPushButton[role="ghost"] {
+    background: transparent;
+    color: #9a8aac;
+    border-radius: 10px;
+    padding: 5px 14px;
+    border: 1px dashed #e3d7f2;
+}
+
+QPushButton[role="ghost"]:hover {
+    background-color: rgba(255,255,255,0.4);
+}
+
+
+/* ========================
+   Scrollbar
+   ======================== */
+
+QScrollBar:vertical {
+    background: transparent;
+    width: 10px;
+}
+
+QScrollBar::handle:vertical {
+    background: rgba(210,160,220,0.45);
+    border-radius: 5px;
+    min-height: 20px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: rgba(210,160,220,0.65);
+}
+
+QScrollBar::add-line,
+QScrollBar::sub-line {
+    height: 0;
+}
+
+
+/* ========================
+   Separator
+   ======================== */
+
+QFrame[frameShape="4"] {
+    color: rgba(220,180,210,0.3);
+}
+
+
+/* ========================
+   Tooltip
+   ======================== */
+
+QToolTip {
+    background-color: rgba(255,255,255,0.96);
+    border: 1px solid rgba(220,180,210,0.45);
+    border-radius: 8px;
+    color: #3B2A3F;
+    padding: 6px;
+}

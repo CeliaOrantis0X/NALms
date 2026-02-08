@@ -1,0 +1,15 @@
+{
+  "御姐": {
+    "slug": "oneesan",
+    "alias": ["御姊", "お姉さん", "oneesan"],
+    "category": ["人物属性", "气质"],
+    "related": ["熟女", "女神系"]
+  },
+
+  "萝莉": {
+    "slug": "loli",
+    "alias": ["ロリ"],
+    "category": ["人物属性"],
+    "related": ["幼女"]
+  }
+}

@@ -1,0 +1,176 @@
+/* =========================================
+   🌃 Global
+========================================= */
+
+* {
+    font-family: "Segoe UI", "Inter", "PingFang SC";
+    font-size: 13px;
+}
+
+QDialog {
+    background: #0b0f14;
+}
+
+
+/* =========================================
+   🌌 Card System
+========================================= */
+
+QWidget[class="card"],
+QGroupBox {
+    background: rgba(20,28,40,0.85);
+    border: 1px solid #1df2ff;
+    border-radius: 14px;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 12px;
+    top: -2px;
+    padding: 0 6px;
+    color: #1df2ff;
+    font-weight: 600;
+}
+
+
+/* =========================================
+   🖼 Avatar
+========================================= */
+
+QLabel#Avatar {
+    background: #05090e;
+    border: 1px solid #ff2fd6;
+    border-radius: 12px;
+}
+
+
+/* =========================================
+   🧠 Section Title
+========================================= */
+
+QLabel[class="sectionTitle"] {
+    color: #ff2fd6;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+
+/* =========================================
+   🧬 Fields
+========================================= */
+
+QLabel[class="fieldLabel"] {
+    color: #1df2ff;
+    font-size: 11px;
+}
+
+QLabel[class="fieldValue"] {
+    color: #e5faff;
+}
+
+
+/* =========================================
+   ✏ Inputs
+========================================= */
+
+QLineEdit,
+QTextEdit,
+QComboBox,
+QTextEdit[class="editorField"] {
+    background: rgba(0,0,0,0.6);
+    border: 1px solid #1df2ff;
+    border-radius: 8px;
+    padding: 6px;
+    color: #e5faff;
+}
+
+QTextEdit:focus,
+QLineEdit:focus,
+QComboBox:focus {
+    border: 1px solid #ff2fd6;
+    background: rgba(0,0,0,0.8);
+}
+
+
+/* =========================================
+   📜 Archive List
+========================================= */
+
+QListWidget#archiveList {
+    background: rgba(0,0,0,0.6);
+    border: 1px solid #1df2ff;
+    border-radius: 10px;
+    color: #e5faff;
+}
+
+QListWidget::item:selected {
+    background: rgba(255,47,214,0.25);
+}
+
+
+/* =========================================
+   🔘 Buttons
+========================================= */
+
+QPushButton {
+    background: rgba(29,242,255,0.12);
+    color: #1df2ff;
+    border-radius: 10px;
+    padding: 6px 14px;
+    border: 1px solid #1df2ff;
+}
+
+QPushButton:hover {
+    background: rgba(255,47,214,0.25);
+    border: 1px solid #ff2fd6;
+    color: white;
+}
+
+QPushButton:pressed {
+    background: rgba(255,47,214,0.4);
+}
+
+
+/* =========================================
+   🎯 Role Buttons
+========================================= */
+
+QPushButton[role="primary"] {
+    background: rgba(255,47,214,0.25);
+    border: 1px solid #ff2fd6;
+    color: white;
+}
+
+QPushButton[role="secondary"] {
+    background: rgba(29,242,255,0.15);
+    border: 1px solid #1df2ff;
+}
+
+QPushButton[role="ghost"] {
+    background: transparent;
+    border: 1px dashed #1df2ff;
+}
+
+
+/* =========================================
+   🌫 Scrollbars
+========================================= */
+
+QScrollBar:vertical {
+    background: transparent;
+    width: 6px;
+}
+
+QScrollBar::handle:vertical {
+    background: #1df2ff;
+    border-radius: 3px;
+}
+
+
+/* =========================================
+   🌈 Selection
+========================================= */
+
+QTextEdit::selection {
+    background: rgba(255,47,214,0.4);
+}

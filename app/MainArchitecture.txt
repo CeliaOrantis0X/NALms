@@ -1,0 +1,26 @@
+2026/1/10 
+app/
+├─ domain/
+│  ├─ base.py
+│  ├─ character.py
+│  └─ lore.py
+│
+├─ repository/
+│  ├─ base_repository.py
+│  ├─ character_repository.py
+│  └─ migration.py
+│
+├─ ui/
+│  ├─ main_window.py
+│  ├─ search_bar.py
+│  ├─ character_item.py
+│  ├─ reader_dialog.py
+│  └─ editor/
+│     ├─ character_editor.py
+│     └─ editor_state.py
+│
+├─ index/
+│  └─ search_index.py
+│
+├─ config/
+└─ drafts/

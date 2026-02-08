@@ -1,0 +1,56 @@
+{
+  "name": "A1",
+  "alias": "a nessan",
+  "gender": "",
+  "age": "25",
+  "birthdate": "",
+  "constellation": "",
+  "hair_color": "black",
+  "eye_color": "black",
+  "height": "170",
+  "weight": "60",
+  "bwh": "",
+  "charm": "SSS+",
+  "weapon": "",
+  "ability": "4",
+  "identity": "",
+  "rank": "5",
+  "capability": "Lv5",
+  "media": "",
+  "partnership": "",
+  "personality": "3",
+  "tags": [
+    "xx"
+  ],
+  "summary": "2",
+  "appearance": "3",
+  "stories": [],
+  "image": "F:/Project/gallery/A1/A1.webp",
+  "_filename": "",
+  "_filepath": "",
+  "x_file": {
+    "image": "F:/Project/gallery/A1/A1.webp",
+    "fields": {
+      "real_name": "X",
+      "true_identity": "",
+      "hidden_alignment": "3",
+      "core_secret": "",
+      "forbidden_relation": "",
+      "dark_history": "",
+      "final_ending": "",
+      "note": "2"
+    },
+    "archives": [
+      {
+        "title": "README",
+        "content": "goto:\n\n3 个扩展方向（推荐顺序）\n🥇 1️⃣ 角色详情「编辑 + 保存」\n\n修改后回写 self.characters\n\n刷新对应卡片\n\n🥈 2️⃣ 角色搜索 / 过滤\n\n按性别 / 年龄 / 职业筛选\n\n搜索框实时过滤卡片\n\n🥉 3️⃣ 外部来源整合\n\nWikipedia / 萌娘百科\n\n搜索 → 转换为角色 → 加入卡片区"
+      },
+      {
+        "title": "Development Log",
+        "content": "2026/1/14\n美化 dialog ui：显示name, alias, age, gender, hair, eyes, height, bwh, \ncharm, capality, media, partnership, tags, \nimage, \nappearance, summary, personality, ability, story \n等内容"
+      }
+    ]
+  },
+  "_type": "character",
+  "_schema_version": 1
+}

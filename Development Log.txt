@@ -1,0 +1,6 @@
+2026/1/14
+美化 dialog ui：显示name, alias, age, gender, hair, eyes, height, bwh, 
+charm, capality, media, partnership, tags, 
+image, 
+appearance, summary, personality, ability, story 
+等内容

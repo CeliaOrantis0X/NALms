@@ -1,0 +1,22 @@
+2026/1/23
+CharacterEditorDialog
+├── Toolbar（顶部操作区）
+├── Meta Area（上半区）
+│   ├── Avatar Panel（头像）
+│   ├── Rating Panel（评分）
+│   ├── Bio Panel（基础信息）
+│   └── Misc Panel（杂项）
+├── Divider
+├── Content Area（下半区）
+│   ├── Content Selector（按钮栏）
+│   └── Content Editor（Stacked QTextEdit）
+├── Story Panel（附加内容）
+└── Session / IO / Autosave
+
+✅ 命名规则（以后所有窗口都遵守）
+类型	规则	              示例
+区域级	_build_xxx_area	      _build_meta_area
+面板级	_build_xxx_panel	  _build_avatar_panel
+内容区	_build_content_area	
+选择器	_build_content_selector	
+编辑器	_build_content_editor
