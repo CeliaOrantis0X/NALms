@@ -7,6 +7,44 @@
     font-size: 13px;
 }
 
+/* =========================================
+   🌃 Main Window Base
+========================================= */
+
+QWidget {
+    background: #0b0f14;
+    color: #e5faff;
+}
+
+
+/* =========================================
+   🌫 Scroll Area Fix
+========================================= */
+
+QScrollArea {
+    background: transparent;
+    border: none;
+}
+
+QScrollArea > QWidget {
+    background: transparent;
+}
+
+QScrollArea QWidget {
+    background: transparent;
+}
+
+
+/* =========================================
+   🧩 Scroll Content Cards (implicit)
+========================================= */
+
+QScrollArea QWidget > QWidget {
+    background: rgba(20,28,40,0.65);
+    border-radius: 12px;
+}
+
+
 QDialog {
     background: #0b0f14;
 }
@@ -15,12 +53,29 @@ QDialog {
 /* =========================================
    🌌 Card System
 ========================================= */
+QWidget[class="card"] QLabel[class="cardName"] {
+    font-size: 20px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
 
 QWidget[class="card"],
 QGroupBox {
     background: rgba(20,28,40,0.85);
     border: 1px solid #1df2ff;
     border-radius: 14px;
+}
+
+QWidget[class="card"]:hover {
+    border: 1px solid #ff2fd6;
+    background: rgba(20,28,40,0.95);
+}
+
+QWidget[class="card"][active="true"] {
+    border: 1px solid #ff2fd6;
+    box-shadow: 0 0 12px rgba(255,47,214,0.5);
 }
 
 QGroupBox::title {

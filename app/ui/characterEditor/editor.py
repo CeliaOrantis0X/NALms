@@ -159,12 +159,6 @@ class CharacterEditorDialog(QDialog):
 
         area.addLayout(self._build_meta_area(), 1)
 
-        '''
-        divider = QFrame()
-        divider.setFrameShape(QFrame.Shape.HLine)
-        divider.setFrameShadow(QFrame.Shadow.Sunken)
-        area.addWidget(divider)
-        '''
         # =================
         # Divider
         # =================
@@ -289,80 +283,6 @@ class CharacterEditorDialog(QDialog):
 
         return card
 
-    '''
-    # 图像显示
-    def _build_avatar_panel(self):
-        card = QWidget()
-        card.setProperty("class", "card")
-        card.setFixedWidth(260)
-
-        layout = QVBoxLayout(card)
-        layout.setContentsMargins(12, 12, 12, 12)
-        layout.setSpacing(8)
-
-        # Avatar
-        self.avatar = QLabel("No Image\nClick Import")
-        self.avatar.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.avatar.setObjectName("Avatar")
-        self.avatar.setFixedHeight(300)
-
-        # Import Button
-        btn = QPushButton("Import Image")
-        btn.clicked.connect(self.import_image)
-        btn.setFixedHeight(28)
-
-        layout.addWidget(self.avatar)
-        layout.addWidget(btn)
-        layout.addStretch()
-
-        return card
-
-    
-    def _build_rating_panel(self):
-        card = QWidget()
-        card.setProperty("class", "card")
-        card.setFixedWidth(260)
-
-        layout = QVBoxLayout(card)
-        layout.setContentsMargins(12, 12, 12, 12)
-        layout.setSpacing(8)
-
-        title = QLabel("Ratings")
-        title.setProperty("class", "sectionTitle")
-
-        layout.addWidget(title)
-
-        grid = QGridLayout()
-        grid.setHorizontalSpacing(8)
-        grid.setVerticalSpacing(6)
-
-        self.charm_cb = QComboBox()
-        self.charm_cb.addItems(["", "SSS+", "SSS", "SS", "S", "A"])
-
-        self.capability_cb = QComboBox()
-        self.capability_cb.addItems(["", "Lv6", "Lv5", "Lv4", "Lv3", "Lv2", "Lv1", "Lv0"])
-
-        for w in (self.charm_cb, self.capability_cb):
-            w.setProperty("class", "fieldInput")
-
-        fields = [
-            ("Charm", self.charm_cb),
-            ("Capability", self.capability_cb),
-        ]
-
-        for row, (label, widget) in enumerate(fields):
-            lab = QLabel(label)
-            lab.setProperty("class", "fieldLabel")
-
-            grid.addWidget(lab, row, 0)
-            grid.addWidget(widget, row, 1)
-
-        layout.addLayout(grid)
-        layout.addStretch()
-
-        return card
-    '''
-    
     # 基本信息
     def _build_bio_panel(self):
         g = QGroupBox("Biography")

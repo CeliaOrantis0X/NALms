@@ -1,15 +1,15 @@
 /* =========================================================
-   日系少女 UI · 百合向 v1.1
+   日系少女 UI · 百合向 v1.2
    Theme: Soft Yuri / Intimate / Transparent
    ========================================================= */
 
 
 /* ========================
-   Global
+   Global Window
    ======================== */
 
 QMainWindow,
-QDialog {
+QWidget {
     background: qlineargradient(
         x1:0, y1:0, x2:0, y2:1,
         stop:0 #FFF7FB,
@@ -20,19 +20,68 @@ QDialog {
     font-size: 11pt;
 }
 
+/* ========================
+   Main Panels
+   ======================== */
+
+QScrollArea {
+    border: 1px solid rgba(180,150,200,0.5);
+    border-radius: 12px;
+    background: rgba(255,255,255,0.6);
+}
+
+QScrollArea > QWidget > QWidget {
+    background: transparent;
+}
+
 
 /* ========================
-   Card Container
+   Card System
    ======================== */
 
 QWidget[class="card"] {
     background: rgba(255, 255, 255, 0.82);
     border: 1px solid rgba(220,180,210,0.45);
     border-radius: 16px;
+
+    padding: 14px 18px;
+}
+
+QWidget[class="card"]:hover {
+    background: rgba(255, 255, 255, 0.88);
+    border-color: rgba(200,160,210,0.65);
+}
+
+
+/* 右侧信息区域不参与背景绘制 */
+QWidget[class="card"] QWidget[class="cardInfo"] {
+    background: transparent;
 }
 
 QWidget[class="card"] QLabel {
     background: transparent;
+}
+
+/* 角色卡片 Avatar 缩略图 */
+QLabel[class="cardAvatar"] {
+    border-radius: 32px; /* 圆形 */
+    border: 1px solid rgba(200,150,210,0.5);
+    background: rgba(255,255,255,0.7);
+    color: #9B7FA0; /* 占位图标颜色 */
+}
+
+
+/* ========================
+   Card Name
+   ======================== */
+
+QWidget[class="card"] QLabel[class="cardName"] {
+    font-size: 20pt;
+    font-weight: 700;
+    color: #3B2A3F;
+
+    letter-spacing: 0.5px;
+    padding-left: 2px;
 }
 
 
@@ -95,13 +144,15 @@ QGroupBox::title {
    ======================== */
 
 QLabel[class="fieldLabel"] {
-    color: #5a4a6a;
-    font-size: 12px;
+    color: #7a6485;
+    font-size: 11pt;
+    margin-top: 4px;
 }
 
 QLabel[class="fieldValue"] {
     color: #2e2435;
-    font-size: 13px;
+    font-size: 12pt;
+    line-height: 1.45;
 }
 
 
@@ -109,7 +160,14 @@ QLabel[class="fieldValue"] {
    Line / Combo Inputs
    ======================== */
 
-QLineEdit,
+QLineEdit {
+    background: rgba(255,255,255,0.9);
+    border: 1px solid #c39fe0;
+    border-radius: 10px;
+    padding: 6px 12px;
+    color: #4b2a5a;
+}
+
 QComboBox {
     background: rgba(255,255,255,0.75);
     color: #2e2435;
@@ -119,7 +177,7 @@ QComboBox {
 }
 
 QLineEdit::placeholder {
-    color: #999;
+    color: #9b7fa0;
 }
 
 
@@ -128,35 +186,29 @@ QLineEdit::placeholder {
 ===================================== */
 
 QTextEdit {
-    background-color: rgba(255,255,255,0.75);
+    background-color: rgba(255,255,255,0.78);
     color: #4a365d;
 
     border: 1px solid #e4d7f3;
-    border-radius: 10px;
+    border-radius: 12px;
 
-    padding: 10px;
+    padding: 12px;
 
     selection-background-color: #f2dfff;
     selection-color: #4a365d;
 
-    font-size: 13px;
-    line-height: 1.4;
+    font-size: 13pt;
+    line-height: 1.6;
 }
-
-/* hover 微浮起 */
 
 QTextEdit:hover {
     border-color: #d7c3f0;
 }
 
-/* focus 呼吸光 */
-
 QTextEdit:focus {
     border: 1px solid #c9b0ea;
     background-color: rgba(255,255,255,0.85);
 }
-
-/* placeholder */
 
 QTextEdit::placeholder {
     color: #b9a7cd;
@@ -196,24 +248,27 @@ QListWidget#archiveList::item:selected {
    ======================== */
 
 QPushButton {
-    background: rgba(255,255,255,0.65);
-    border: 1px solid rgba(220,180,210,0.45);
-    border-radius: 10px;
-    padding: 5px 16px;
-    color: #5A3F5F;
+    background-color: #e6d0f5; /* 浅紫色背景 */
+    color: #4b2a5a;            /* 深紫色文字 */
+    border: 1px solid #c39fe0;
+    border-radius: 12px;
+    padding: 6px 18px;
+    font-weight: 600;
 }
 
 QPushButton:hover {
-    background: rgba(240,200,230,0.35);
+    background-color: #f2d9fb;
 }
 
 QPushButton:pressed {
-    background: rgba(240,200,230,0.55);
+    background-color: #d8b0f0;
 }
 
-QPushButton:disabled {
-    color: #AAA;
-    background: rgba(245,240,245,0.6);
+QPushButton[role="primary"] {
+    background-color: #d28af0;
+    color: white;
+    font-weight: bold;
+    border: 1px solid #b062d9;
 }
 
 

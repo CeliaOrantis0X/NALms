@@ -9,14 +9,14 @@ from PyQt6.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout,
     QPushButton, QLineEdit, QLabel, QComboBox,
     QFileDialog, QScrollArea, QGridLayout,
-    QFrame
+    QFrame, QSizePolicy
 )
 from PyQt6.QtCore import Qt, QSettings
+from PyQt6.QtGui import QPixmap, QPainter, QColor, QBrush
 
-# from app.config.main_style_01 import DARK_THEME
 from app.ui.characterEditor.editor import CharacterEditorDialog
 from app.domain.character import Character
-from app.ui.profile_reader import CharacterReaderDialog
+from app.ui.characterEditor.profile_reader import CharacterReaderDialog
 from app.ui.theme_manager import ThemeManager
 
 
@@ -45,84 +45,152 @@ def highlight(text: str, keyword: str) -> str:
 
 
 class CharacterListItem(QWidget):
+    MIN_AVATAR_SIZE = 100  # 最小头像直径，避免卡片内容太少时太小
+
     def __init__(self, character, keyword: str = "", on_click=None):
         super().__init__()
+        self.setProperty("class", "card")
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
         self.character = character
         self.keyword = keyword
         self.on_click = on_click
-
         self.setCursor(Qt.CursorShape.PointingHandCursor)
 
-        layout = QVBoxLayout(self)
-        layout.setSpacing(4)
-        layout.setContentsMargins(10, 10, 10, 10)
+        # ===== 外层水平布局 =====
+        outer_layout = QHBoxLayout(self)
+        outer_layout.setSpacing(10)
+        outer_layout.setContentsMargins(10, 10, 10, 10)
 
         # =====================
-        # Name (主标题)
+        # Avatar 区域
         # =====================
+        self.avatar_label = QLabel()
+        self.avatar_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.avatar_label.setProperty("class", "cardAvatar")
+        self.avatar_label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
+        outer_layout.addWidget(self.avatar_label)
+
+        # =====================
+        # 右侧信息列
+        # =====================
+        self.info_widget = QWidget()
+        self.info_widget.setProperty("class", "cardInfo")
+        self.info_widget.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Minimum
+        )
+
+        self.info_layout = QVBoxLayout(self.info_widget)
+        self.info_layout.setSpacing(2)
+        self.info_layout.setContentsMargins(0, 0, 0, 0)
+
+        outer_layout.addWidget(
+            self.info_widget,
+            alignment=Qt.AlignmentFlag.AlignTop
+        )
+
+        # Name
         name_text = character.name or "（nameless）"
         name = QLabel(highlight(name_text, self.keyword))
         name.setTextFormat(Qt.TextFormat.RichText)
-        # name.setStyleSheet("font-size:15px; font-weight:bold;")
-        layout.addWidget(name)
+        name.setProperty("class", "cardName")
+        self.info_layout.addWidget(name)
 
-        # =====================
-        # Media (次标题)
-        # =====================
+        # 次级信息容器（统一缩进）
+        sub_layout = QVBoxLayout()
+        sub_layout.setSpacing(2)
+        sub_layout.setContentsMargins(16, 0, 0, 0)  # ← 关键：左缩进
+        self.info_layout.addLayout(sub_layout)
+
+        # Media
         media_text = (getattr(character, "media", "") or "").strip()
+        media_label = (
+            QLabel(highlight(media_text, self.keyword))
+            if media_text else QLabel("— Unknown Work —")
+        )
+        media_label.setTextFormat(Qt.TextFormat.RichText)
+        sub_layout.addWidget(media_label)
 
-        if media_text:
-            media = QLabel(highlight(media_text, self.keyword))
-            # media.setStyleSheet("color:#aaa; font-size:12px;")
-        else:
-            media = QLabel("— Unknown Work —")
-
-        media.setTextFormat(Qt.TextFormat.RichText)
-        layout.addWidget(media)
-
-        # =====================
-        # Meta row: age / height
-        # =====================
+        # Meta
         meta_parts = []
         if getattr(character, "age", None):
             meta_parts.append(f"{character.age}")
         if getattr(character, "height", None):
             meta_parts.append(f"{character.height}")
-
         if meta_parts:
-            meta = QLabel(" · ".join(meta_parts))
-            # meta.setStyleSheet("color:#888; font-size:11px;")
-            layout.addWidget(meta)
+            meta = QLabel(" ｜ ".join(meta_parts))
+            sub_layout.addWidget(meta)
 
-        # =====================
         # Tags
-        # =====================
         if character.tags:
-            tag_parts = []
-            for tag in character.tags:
-                tag_parts.append(highlight(tag, self.keyword))
-
+            tag_parts = [highlight(tag, self.keyword) for tag in character.tags]
             tags = QLabel(" · ".join(tag_parts))
             tags.setTextFormat(Qt.TextFormat.RichText)
-            # tags.setStyleSheet("color:#999; font-size:12px;")
-            layout.addWidget(tags)
+            sub_layout.addWidget(tags)
+
+        # ===== 设置头像 =====
+        self._set_avatar(character)
+
+    def _set_avatar(self, character):
+        size = self.MIN_AVATAR_SIZE
+        avatar_path = getattr(character, "image", None)
+
+        if avatar_path and os.path.isfile(avatar_path):
+            pix = QPixmap(avatar_path)
+            if not pix.isNull():
+                # 以宽度为基准缩放，保证脸在上方
+                scale = size / pix.width()
+                new_w = size
+                new_h = int(pix.height() * scale)
+
+                pix = pix.scaled(
+                    new_w,
+                    new_h,
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation
+                )
+
+                # 从顶部裁切
+                if pix.height() > size:
+                    pix = pix.copy(0, 0, size, size)
+            else:
+                pix = self._placeholder_pixmap(size)
+        else:
+            pix = self._placeholder_pixmap(size)
+
+        self.avatar_label.setPixmap(pix)
+
 
     def mousePressEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton and self.on_click:
             self.on_click(self.character)
+
+    def _placeholder_pixmap(self, size: int):
+        placeholder = QPixmap(size, size)
+        placeholder.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(placeholder)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setBrush(QBrush(QColor(200, 160, 220, 100)))
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.drawEllipse(0, 0, size, size)
+        painter.end()
+        return placeholder
 
 
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
+
         ThemeManager.load()
         ThemeManager.apply(ThemeManager.current)
 
-        self.setWindowTitle("NALms 2.0")
-        self.resize(540, 360)
+        self.setWindowTitle("NALms")
+        self.resize(720, 480)
 
         # ===== 设置存储 =====
-        self.settings = QSettings("NALms", "NALms2")
+        self.settings = QSettings("NALms")
 
         # ===== 内存数据 =====
         self.current_folder: str | None = None
@@ -130,7 +198,6 @@ class MainWindow(QWidget):
         self.search_index: list[str] = []
 
         self._build_ui()
-        # self.setStyleSheet(DARK_THEME)
 
         # ★ 启动时恢复上次目录
         self._restore_last_folder()
@@ -141,8 +208,10 @@ class MainWindow(QWidget):
     def _build_ui(self):
         root = QHBoxLayout(self)
         root.setSpacing(16)
+        root.setContentsMargins(12,12,12,12)
 
         root.addLayout(self._build_left_panel(), stretch=3)
+        root.addSpacing(12)
         root.addLayout(self._build_right_panel(), stretch=1)
 
     # ======================================================
@@ -155,6 +224,7 @@ class MainWindow(QWidget):
         folder_row = QHBoxLayout()
         self.folder_label = QLabel("Current Folder:")
         folder_btn = QPushButton("Select Folder")
+        folder_btn.setProperty("role", "primary")
         folder_btn.clicked.connect(self.choose_folder)
 
         folder_row.addWidget(self.folder_label)
@@ -191,11 +261,14 @@ class MainWindow(QWidget):
         self.grid.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.grid.setSpacing(12)
 
+        self.grid.setColumnStretch(0, 1)
+
         self.scroll.setWidget(self.container)
         layout.addWidget(self.scroll, stretch=1)
 
         bottom_row = QHBoxLayout()
         clear_btn = QPushButton("Clear Results")
+        clear_btn.setProperty("role", "secondary")
         clear_btn.clicked.connect(self.clear_results)
 
         bottom_row.addStretch()
@@ -211,8 +284,9 @@ class MainWindow(QWidget):
         layout = QVBoxLayout()
         layout.setSpacing(12)
 
-        editor_btn = QPushButton("Character Editor")
+        editor_btn = QPushButton("Open Editor")
         editor_btn.setFixedHeight(44)
+        editor_btn.setProperty("role", "primary")
         editor_btn.clicked.connect(self.open_character_editor)
         layout.addWidget(editor_btn)
 
@@ -251,29 +325,35 @@ class MainWindow(QWidget):
         self.characters.clear()
         self.search_index.clear()
 
-        for filename in os.listdir(folder):
-            # ★ 明确排除草稿 / 隐藏 / 临时文件
-            if not filename.endswith(".json"):
-                continue
-            if filename.startswith("_") or filename.startswith("."):
-                continue
+        for root, dirs, files in os.walk(folder):
+            # 可选：跳过隐藏文件夹 / 特殊目录
+            dirs[:] = [
+                d for d in dirs
+                if not d.startswith(".") and not d.startswith("_")
+            ]
 
-            path = os.path.join(folder, filename)
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-            except Exception:
-                continue
+            for filename in files:
+                if not filename.endswith(".json"):
+                    continue
+                if filename.startswith("_") or filename.startswith("."):
+                    continue
 
-            if not isinstance(data, dict):
-                continue
+                path = os.path.join(root, filename)
 
-            c = Character.from_dict(data)
-            c._source_path = path
+                try:
+                    with open(path, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                except Exception:
+                    continue
 
-            self.characters.append(c)
-            self.search_index.append(c.searchable_text())
-            
+                if not isinstance(data, dict):
+                    continue
+
+                c = Character.from_dict(data)
+                c._source_path = path
+
+                self.characters.append(c)
+                self.search_index.append(c.searchable_text())
 
     def apply_search(self):
         if not self.characters:
@@ -284,11 +364,26 @@ class MainWindow(QWidget):
             self.refresh_cards(self.characters)
             return
 
-        result = [
-            c for c, blob in zip(self.characters, self.search_index)
-            if keyword in blob
-        ]
+        matched = []
+
+        for c, blob in zip(self.characters, self.search_index):
+            if keyword not in blob:
+                continue
+
+            name = (c.name or "").lower()
+
+            # 优先级：name 命中最前
+            priority = 0 if keyword in name else 1
+
+            matched.append((priority, c))
+
+        # 按优先级排序（稳定）
+        matched.sort(key=lambda x: x[0])
+
+        result = [c for _, c in matched]
+
         self.refresh_cards(result)
+
 
     def clear_results(self):
         self.search_input.clear()
@@ -325,6 +420,8 @@ class MainWindow(QWidget):
             )
             self.grid.addWidget(item, i, 0)
 
+        self.grid.setRowStretch(len(characters), 1)
+
     def open_character_reader(self, character):
         dlg = CharacterReaderDialog(
             character,
@@ -356,26 +453,21 @@ class MainWindow(QWidget):
         layout.setContentsMargins(8, 8, 8, 8)
 
         name = QLabel(char.name or "Unnamed")
-        # name.setStyleSheet("font-weight: bold; font-size: 14px;")
 
         alias = QLabel(char.alias)
         
-        # alias.setStyleSheet("color: #aaa; font-size: 11px;")
-
         tags = QLabel(", ".join(char.tags) if char.tags else "")
-        # tags.setStyleSheet("color: #888; font-size: 11px;")
 
-        intro = QLabel((char.intro or "")[:80])
-        intro.setWordWrap(True)
-        # intro.setStyleSheet("color: #bbb; font-size: 11px;")
+        summary = QLabel((char.summary or "")[:80])
+        summary.setWordWrap(True)
 
         layout.addWidget(name)
         if char.alias:
             layout.addWidget(alias)
         if char.tags:
             layout.addWidget(tags)
-        if char.intro:
-            layout.addWidget(intro)
+        if char.summary:
+            layout.addWidget(summary)
 
         return frame
 

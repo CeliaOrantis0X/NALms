@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap
+from app.utils.text_render import render_markdown_for_qt
 
 
 class XFileArchivePreview(QDialog):
@@ -52,10 +53,11 @@ class XFileArchivePreview(QDialog):
         # =========================
         # Viewer
         # =========================
-
         viewer = QTextEdit()
         viewer.setReadOnly(True)
-        viewer.setMarkdown(content)
+
+        html = render_markdown_for_qt(content)
+        viewer.setHtml(html)
 
         # =========================
         # Assemble Card
@@ -172,44 +174,6 @@ class XFileArchiveReader(QDialog):
 
         meta.addWidget(info_box, 1)
 
-        '''
-        # ---- Fields (Yuri Grid) ----
-
-        info_box = QGroupBox("X Info")
-
-        info_box.setSizePolicy(
-            QSizePolicy.Policy.Preferred,
-            QSizePolicy.Policy.Maximum
-        )
-
-        grid = QGridLayout(info_box)
-        grid.setHorizontalSpacing(12)
-        grid.setVerticalSpacing(6)
-
-        grid.setColumnStretch(0, 0)
-        grid.setColumnStretch(1, 1)
-        grid.setColumnStretch(2, 0)
-        grid.setColumnStretch(3, 1)
-
-        visible = [(k, v) for k, v in self.fields.items() if v]
-
-        for i, (k, v) in enumerate(visible):
-            row = i // 2
-            col = (i % 2) * 2
-
-            lab = QLabel(k.replace("_", " ").title())
-            lab.setProperty("class", "fieldLabel")
-
-            val = QLabel(str(v))
-            val.setProperty("class", "fieldValue")
-            val.setWordWrap(True)
-
-            grid.addWidget(lab, row, col)
-            grid.addWidget(val, row, col + 1)
-
-        meta.addWidget(info_box, alignment=Qt.AlignmentFlag.AlignHCenter)
-
-        '''
         # ---- 底部呼吸分割线 ----
         sep = QFrame()
         sep.setFrameShape(QFrame.Shape.HLine)
@@ -220,19 +184,12 @@ class XFileArchiveReader(QDialog):
         # =======================
         # Right: Reader
         # =======================
-        '''
-        reader_wrap = QWidget()
-        reader = QVBoxLayout(reader_wrap)
-        reader.setSpacing(8)
-        '''
         reader_wrap = QWidget()
         reader_wrap.setProperty("class", "card")
 
         reader = QVBoxLayout(reader_wrap)
         reader.setContentsMargins(14, 14, 14, 14)
         reader.setSpacing(10)
-
-        # ----- Archive List ----
 
         # ---- Archive List ----
 
@@ -302,4 +259,9 @@ class XFileArchiveReader(QDialog):
 
     def _show_archive(self, archive: dict):
         self.archive_title.setText(archive.get("title", ""))
-        self.viewer.setMarkdown(archive.get("content", ""))
+
+        content = archive.get("content", "")
+
+        html = render_markdown_for_qt(content)
+        self.viewer.setHtml(html)
+

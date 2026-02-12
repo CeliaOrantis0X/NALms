@@ -1,13 +1,13 @@
 NALms/
 ├── app/
-│   ├── ui/
+│   ├── ui/ #上传git
 │   ├── domain/
 │   ├── utils/
 │   ├── assets/
 │   │   └── themes/
 │   └── theme.json
 │
-├── data/
+├── data/ #不上传git
 │   └── examples/
 │       └── sample_character.json
 │

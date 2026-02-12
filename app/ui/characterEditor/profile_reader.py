@@ -12,7 +12,7 @@ from PyQt6.QtGui import QPixmap
 
 from app.ui.characterEditor.editor import CharacterEditorDialog
 from app.ui.panels.xfile_reader import XFileArchiveReader
-# from app.config.style_mixin import BaseStyleMixin
+# from app.utils.text_render import render_markdown_for_qt
 
 
 class CharacterReaderDialog(QDialog):
@@ -215,7 +215,7 @@ class CharacterReaderDialog(QDialog):
 
     def _switch_content(self, index: int):
         _, content = self._content_sections[index]
-        self.content_viewer.setMarkdown((content or "").strip())
+        self.content_viewer.setPlainText((content or "").strip())
 
         for i, btn in enumerate(self._content_buttons):
             if i == index:

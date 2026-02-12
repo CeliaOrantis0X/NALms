@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QGridLayout,
     QLabel, QPushButton, QTextEdit, QFileDialog,
     QListWidget, QListWidgetItem, QWidget, QFrame,
-    QGroupBox, QSizePolicy
+    QGroupBox, QSizePolicy, QMessageBox
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap
@@ -10,7 +10,6 @@ from pathlib import Path
 
 from app.ui.panels.xfile_reader import XFileArchivePreview
 from app.utils.text_reader import read_text_safely
-
 
 class XFileDialog(QDialog):
     def __init__(self, x_file: dict | None = None, parent=None):
@@ -257,7 +256,10 @@ class XFileDialog(QDialog):
     # --------------------------------------------------
     def _import_archive(self):
         file, _ = QFileDialog.getOpenFileName(
-            self, "Import Secret Archive", "", "Text (*.txt *.md)"
+            self,
+            "Import Secret Archive",
+            "",
+            "Text (*.txt *.md)"
         )
         if not file:
             return
@@ -270,6 +272,7 @@ class XFileDialog(QDialog):
         })
 
         self._refresh_archives()
+
 
     def _refresh_archives(self):
         self.archive_list.clear()
