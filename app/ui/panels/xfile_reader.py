@@ -113,7 +113,7 @@ class XFileArchiveReader(QDialog):
         # ---- Image ----
 
         self.image_label = QLabel()
-        self.image_label.setObjectName("Avatar")
+        self.image_label.setObjectName("Image")
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.image_label.setFixedHeight(300)
 

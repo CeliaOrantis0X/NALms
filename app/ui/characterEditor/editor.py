@@ -40,36 +40,6 @@ class CharacterEditorDialog(QDialog):
     character_saved = pyqtSignal(str)  
     # ↑ 传出保存后的 json 文件路径
 
-    BTN_ACTIVE_STYLE = """
-    QPushButton {
-        background-color: #e6d9f5;
-        color: #5a3b6e;
-        font-weight: bold;
-        border-radius: 10px;
-        padding: 6px 14px;
-        border: 1px solid #d2bfe8;
-    }
-
-    QPushButton:hover {
-        background-color: #f0e6fb;
-    }
-    """
-
-    BTN_INACTIVE_STYLE = """
-    QPushButton {
-        background-color: rgba(255,255,255,0.6);
-        color: #8a6fa3;
-        border-radius: 10px;
-        padding: 6px 14px;
-        border: 1px solid #e2d6f0;
-    }
-
-    QPushButton:hover {
-        background-color: #f6effc;
-        color: #5a3b6e;
-    }
-"""
-
     # ==================================================
     # lifecycle
     # ==================================================
@@ -424,10 +394,18 @@ class CharacterEditorDialog(QDialog):
 
         for i, (name, editor) in enumerate(editors):
             self.text_stack.addWidget(editor)
+
             btn = QPushButton(name)
+            btn.setCheckable(True)                 # 👈 关键
+            btn.setObjectName("contentTab")         # 👈 限定qss范围
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+
             btn.clicked.connect(lambda _, x=i: self._switch_text_block(x))
+
             self._text_buttons.append(btn)
             bar.addWidget(btn)
+        
+        self._text_buttons[0].setChecked(True)
 
         self.text_stats_label = QLabel("")
         bar.addStretch()
@@ -442,10 +420,7 @@ class CharacterEditorDialog(QDialog):
         self.text_stack.setCurrentIndex(index)
 
         for i, btn in enumerate(self._text_buttons):
-            if i == index:
-                btn.setStyleSheet(self.BTN_ACTIVE_STYLE)
-            else:
-                btn.setStyleSheet(self.BTN_INACTIVE_STYLE)
+            btn.setChecked(i == index)
         
         self._update_text_stats()   
 

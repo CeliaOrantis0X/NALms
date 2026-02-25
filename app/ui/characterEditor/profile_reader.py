@@ -14,38 +14,7 @@ from app.ui.characterEditor.editor import CharacterEditorDialog
 from app.ui.panels.xfile_reader import XFileArchiveReader
 # from app.utils.text_render import render_markdown_for_qt
 
-
 class CharacterReaderDialog(QDialog):
-
-    READER_BTN_ACTIVE = """
-    QPushButton {
-        background-color: #e6d9f5;
-        color: #5a3b6e;
-        font-weight: bold;
-        border-radius: 10px;
-        padding: 6px 14px;
-        border: 1px solid #d2bfe8;
-    }
-
-    QPushButton:hover {
-        background-color: #f0e6fb;
-    }
-    """
-
-    READER_BTN_INACTIVE = """
-        QPushButton {
-        background-color: rgba(255,255,255,0.6);
-        color: #8a6fa3;
-        border-radius: 10px;
-        padding: 6px 14px;
-        border: 1px solid #e2d6f0;
-    }
-
-    QPushButton:hover {
-        background-color: #f6effc;
-        color: #5a3b6e;
-        }
-    """
 
     def __init__(self, character, json_path: str | None = None, parent=None):
         super().__init__(parent)
@@ -86,11 +55,11 @@ class CharacterReaderDialog(QDialog):
         outer.setSpacing(10)
 
         # ------------------------------------------------
-        # Avatar
+        # Image
         # ------------------------------------------------
 
         avatar = QLabel()
-        avatar.setObjectName("Avatar")
+        avatar.setObjectName("Image")
         avatar.setAlignment(Qt.AlignmentFlag.AlignCenter)
         avatar.setFixedHeight(300)
 
@@ -189,17 +158,18 @@ class CharacterReaderDialog(QDialog):
         self._content_buttons = []
 
         sections = [
-            ("🌸Summary", self.character.summary),
-            ("🌸Appearance", self.character.appearance),
-            ("🌸Personality", self.character.personality),
-            ("🌸Ability", self.character.ability),
+            ("Summary", self.character.summary),
+            ("Appearance", self.character.appearance),
+            ("Personality", self.character.personality),
+            ("Ability", self.character.ability),
         ]
         self._content_sections = sections
 
         for i, (title, _) in enumerate(sections):
             btn = QPushButton(title)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            btn.setStyleSheet(self.READER_BTN_INACTIVE)
+            btn.setCheckable(True)  # 👈 关键
+            btn.setObjectName("contentTab")  # 👈 用于限定qss范围
             btn.clicked.connect(lambda _, x=i: self._switch_content(x))
             bar.addWidget(btn)
             self._content_buttons.append(btn)
@@ -218,10 +188,9 @@ class CharacterReaderDialog(QDialog):
         self.content_viewer.setPlainText((content or "").strip())
 
         for i, btn in enumerate(self._content_buttons):
-            if i == index:
-                btn.setStyleSheet(self.READER_BTN_ACTIVE)
-            else:
-                btn.setStyleSheet(self.READER_BTN_INACTIVE)
+            btn.setChecked(i == index)
+
+        self._content_buttons[0].setChecked(True)
 
     # --------------------------------------------------
     # meta area (left)
