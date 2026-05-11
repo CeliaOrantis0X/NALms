@@ -5,6 +5,7 @@ class Character:
     SCHEMA_VERSION = 1
 
     def __init__(self):
+        self.id = ""
         self.name = ""
         self.alias = ""
         self.gender = ""
@@ -66,7 +67,7 @@ class Character:
             if hasattr(c, key):
                 setattr(c, key, value)
 
-        # ===== X FILE（关键修复点）=====
+        # ===== X FILE =====
         raw_x = data.get("x_file")
 
         if isinstance(raw_x, dict):
@@ -88,6 +89,7 @@ class Character:
 
         # 1. 明确承诺支持搜索的字段
         for key in (
+            "id",
             "name",
             "alias",
             "summary",

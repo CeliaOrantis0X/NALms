@@ -216,6 +216,7 @@ class CharacterReaderDialog(QDialog):
         grid.setColumnStretch(3, 1)
 
         fields = [
+            ("ID", self.character.id),
             ("Age", self.character.age),
             ("Gender", self.character.gender),
             ("Height", self.character.height),
@@ -262,10 +263,10 @@ class CharacterReaderDialog(QDialog):
     # --------------------------------------------------
     def open_editor(self):
         dlg = CharacterEditorDialog(self)
-        dlg.load_character(self.character)
+        dlg.load_model(self.character)
 
         if self.json_path:
-            dlg.current_json_path = self.json_path
+            dlg.current_path = self.json_path
 
         main = self.parent()
         if main and hasattr(main, "on_character_saved"):

@@ -14,7 +14,7 @@ class EditorSession:
 
     def __init__(self):
         self.character: Character = Character()
-        self.current_json_path: str | None = None
+        self.current_path: str | None = None
 
         self._baseline_snapshot: dict = {}
         self._dirty: bool = False
@@ -25,7 +25,7 @@ class EditorSession:
 
     def load_character(self, c: Character, json_path: str | None = None):
         self.character = c
-        self.current_json_path = json_path
+        self.current_path = json_path
         self._baseline_snapshot = self._make_snapshot()
         self._dirty = False
 

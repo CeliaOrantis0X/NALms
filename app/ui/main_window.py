@@ -45,7 +45,7 @@ def highlight(text: str, keyword: str) -> str:
 
 
 class CharacterListItem(QWidget):
-    MIN_AVATAR_SIZE = 100  # 最小头像直径，避免卡片内容太少时太小
+    MIN_AVATAR_SIZE = 100  # 最小图像直径，避免卡片内容太少时太小
 
     def __init__(self, character, keyword: str = "", on_click=None):
         super().__init__()
@@ -91,17 +91,51 @@ class CharacterListItem(QWidget):
             alignment=Qt.AlignmentFlag.AlignTop
         )
 
-        # Name
+        # ID在Name同行右侧显示，和Name呈两端对齐，举例ID: S10001
+        # =====================================
+        # Name + ID Row
+        # =====================================
+
+        title_row = QHBoxLayout()
+        title_row.setContentsMargins(0, 0, 0, 0)
+        title_row.setSpacing(8)
+
+        # ---- Name ----
+
         name_text = character.name or "（nameless）"
+
         name = QLabel(highlight(name_text, self.keyword))
         name.setTextFormat(Qt.TextFormat.RichText)
         name.setProperty("class", "cardName")
-        self.info_layout.addWidget(name)
+        name.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Preferred
+        )
+
+        title_row.addWidget(name)
+
+        # ---- Push Stretch ----
+
+        title_row.addStretch()
+
+        # ---- ID ----
+
+        char_id = getattr(character, "id", "") or ""
+
+        id_label = QLabel(f"ID: {char_id}")
+        id_label.setProperty("class", "cardId")
+
+        title_row.addWidget(id_label)
+
+        # ---- Add Row ----
+
+        self.info_layout.addLayout(title_row)
+        
 
         # 次级信息容器（统一缩进）
         sub_layout = QVBoxLayout()
         sub_layout.setSpacing(2)
-        sub_layout.setContentsMargins(16, 0, 0, 0)  # ← 关键：左缩进
+        sub_layout.setContentsMargins(16, 0, 0, 0)  # 左缩进
         self.info_layout.addLayout(sub_layout)
 
         # Media
@@ -140,7 +174,7 @@ class CharacterListItem(QWidget):
         if avatar_path and os.path.isfile(avatar_path):
             pix = QPixmap(avatar_path)
             if not pix.isNull():
-                # 以宽度为基准缩放，保证脸在上方
+                # 以宽度为基准缩放，保证上部在上方
                 scale = size / pix.width()
                 new_w = size
                 new_h = int(pix.height() * scale)

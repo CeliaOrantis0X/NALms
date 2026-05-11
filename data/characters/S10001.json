@@ -1,0 +1,48 @@
+{
+  "id": "S10001",
+  "name": "SSS+",
+  "alias": "GODDESS",
+  "gender": "",
+  "age": "",
+  "birthdate": "",
+  "constellation": "",
+  "hair_color": "",
+  "eye_color": "BLUE",
+  "height": "",
+  "weight": "",
+  "bwh": "",
+  "charm": "",
+  "weapon": "",
+  "ability": "",
+  "identity": "",
+  "rank": "",
+  "capability": "",
+  "media": "Skyline",
+  "partnership": "",
+  "personality": "",
+  "tags": [
+    "Goddess"
+  ],
+  "summary": "",
+  "appearance": "",
+  "stories": [],
+  "image": null,
+  "_filename": "",
+  "_filepath": "",
+  "x_file": {
+    "image": null,
+    "fields": {
+      "real_name": "S",
+      "true_identity": "RED",
+      "hidden_alignment": "",
+      "core_secret": "",
+      "forbidden_relation": "",
+      "dark_history": "",
+      "final_ending": "",
+      "note": ""
+    },
+    "archives": []
+  },
+  "_type": "character",
+  "_schema_version": 1
+}

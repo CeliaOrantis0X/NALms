@@ -47,20 +47,20 @@ class CharacterEditorDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.character: Character | None = None
-        self.x_file: dict | None = None
+        self.model: Character | None = None
+        self.xfile_model: dict | None = None
 
         self.session = EditorSession()
 
-        self.current_json_path = None
-        self.image_path = None
+        # self.image_path = None
+        self.current_path = None
+        self.model_image_path = None
         self.story_blocks = []
 
         self.setWindowTitle("Character Editor")
         self.resize(720, 800)
 
         self._build_ui()
-        # self.load_base_style()
         self._bind_fields()
         self._setup_autosave()
 
@@ -196,7 +196,7 @@ class CharacterEditorDialog(QDialog):
         self.avatar.setFixedHeight(300)
 
         import_btn = QPushButton("Import Image")
-        import_btn.clicked.connect(self.import_image)
+        import_btn.clicked.connect(self._import_image)
         import_btn.setFixedHeight(28)
 
         layout.addWidget(self.avatar)
@@ -258,6 +258,7 @@ class CharacterEditorDialog(QDialog):
         g = QGroupBox("Biography")
         l = QGridLayout(g)
 
+        self.id_input = QLineEdit()
         self.name_input = QLineEdit()
         self.alias_input = QLineEdit()
 
@@ -279,6 +280,7 @@ class CharacterEditorDialog(QDialog):
 
         # 所有输入统一 class
         for w in (
+            self.id_input,
             self.name_input,
             self.alias_input,
             self.gender_cb,
@@ -296,6 +298,7 @@ class CharacterEditorDialog(QDialog):
             w.setProperty("class", "fieldInput")
 
         fields = [
+            ("ID", self.id_input),
             ("Name", self.name_input),
             ("Alias", self.alias_input),
             ("Gender", self.gender_cb),
@@ -385,6 +388,14 @@ class CharacterEditorDialog(QDialog):
         self.edit_personality = QTextEdit()
         self.edit_ability = QTextEdit()
 
+        for editor in (
+            self.edit_appearance,
+            self.edit_summary,
+            self.edit_personality,
+            self.edit_ability
+        ):
+            editor.setObjectName("contentEditor")
+
         editors = [
             ("Appearance", self.edit_appearance),
             ("Summary", self.edit_summary),
@@ -396,8 +407,8 @@ class CharacterEditorDialog(QDialog):
             self.text_stack.addWidget(editor)
 
             btn = QPushButton(name)
-            btn.setCheckable(True)                 # 👈 关键
-            btn.setObjectName("contentTab")         # 👈 限定qss范围
+            btn.setCheckable(True)                 
+            btn.setObjectName("contentTab")         #  限定qss范围
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
 
             btn.clicked.connect(lambda _, x=i: self._switch_text_block(x))
@@ -419,10 +430,24 @@ class CharacterEditorDialog(QDialog):
     def _switch_text_block(self, index: int):
         self.text_stack.setCurrentIndex(index)
 
+        # tab按钮状态
         for i, btn in enumerate(self._text_buttons):
             btn.setChecked(i == index)
-        
-        self._update_text_stats()   
+
+        # editor active状态
+        for i in range(self.text_stack.count()):
+
+            editor = self.text_stack.widget(i)
+
+            is_active = (i == index)
+
+            editor.setProperty("active", is_active)
+
+            # 强制刷新QSS
+            editor.style().unpolish(editor)
+            editor.style().polish(editor)
+
+        self._update_text_stats()
 
     # 文本统计函数
     def _update_text_stats(self):
@@ -467,15 +492,14 @@ class CharacterEditorDialog(QDialog):
     # ==================================================
     # remaining logic unchanged
     # ==================================================
-    # 下面所有：binding / load / save / autosave / xfile
-    # 均与原实现完全一致（略）
 
     # --------------------------------------------------
-    # binding
+    # field binding
     # --------------------------------------------------
 
     def _bind_fields(self):
         self.bindings = {
+            "id": self.id_input,
             "name": self.name_input,
             "alias": self.alias_input,
             "gender": self.gender_cb,
@@ -512,49 +536,49 @@ class CharacterEditorDialog(QDialog):
 
         for w in self.bindings.values():
             if isinstance(w, QComboBox):
-                w.currentTextChanged.connect(self._sync_dirty_state)
+                w.currentTextChanged.connect(self._update_dirty_state)
             else:
-                w.textChanged.connect(self._sync_dirty_state)
+                w.textChanged.connect(self._update_dirty_state)
 
-        self.tag_input.textChanged.connect(self._sync_dirty_state)
+        self.tag_input.textChanged.connect(self._update_dirty_state)
 
-        self.edit_summary.textChanged.connect(self._sync_dirty_state)
-        self.edit_appearance.textChanged.connect(self._sync_dirty_state)
-        self.edit_personality.textChanged.connect(self._sync_dirty_state)
-        self.edit_ability.textChanged.connect(self._sync_dirty_state)       
+        self.edit_summary.textChanged.connect(self._update_dirty_state)
+        self.edit_appearance.textChanged.connect(self._update_dirty_state)
+        self.edit_personality.textChanged.connect(self._update_dirty_state)
+        self.edit_ability.textChanged.connect(self._update_dirty_state)       
 
     # --------------------------------------------------
     # data <-> ui
     # --------------------------------------------------
 
-    def load_character(self, c: Character):
-        self.character = c
-        self.x_file = c.x_file if isinstance(c.x_file, dict) else None
-        self.session.load_character(c, self.current_json_path)
+    def load_model(self, model: Character):
+        self.model = model
+        self.xfile_model = model.x_file if isinstance(model.x_file, dict) else None
+        self.session.load_character(model, self.current_path)
 
         for k, w in self.bindings.items():
-            v = getattr(c, k, "")
+            v = getattr(model, k, "")
             if isinstance(w, QComboBox):
                 w.setCurrentText(v)
             else:
                 w.setText(v)
 
-        self.tag_input.setText(", ".join(c.tags))
+        self.tag_input.setText(", ".join(model.tags))
 
-        self.edit_summary.setPlainText(c.summary)
-        self.edit_appearance.setPlainText(c.appearance)
-        self.edit_personality.setPlainText(c.personality)
-        self.edit_ability.setPlainText(c.ability)
+        self.edit_summary.setPlainText(model.summary)
+        self.edit_appearance.setPlainText(model.appearance)
+        self.edit_personality.setPlainText(model.personality)
+        self.edit_ability.setPlainText(model.ability)
 
-        self.story_blocks = c.stories or []
+        self.story_blocks = model.stories or []
         self.story_label.setText(
             f"{len(self.story_blocks)} stories imported"
             if self.story_blocks else " "
         )
 
-        self.image_path = c.image
-        if c.image and Path(c.image).exists():
-            pix = QPixmap(c.image)
+        self.model_image_path = model.image
+        if model.image and Path(model.image).exists():
+            pix = QPixmap(model.image)
             if not pix.isNull():
                 self.avatar.setPixmap(
                     pix.scaled(
@@ -566,34 +590,33 @@ class CharacterEditorDialog(QDialog):
         else:
             self.avatar.clear()
 
-        self._sync_dirty_state()
+        self._update_dirty_state()
 
 
-    def collect_character(self) -> Character:
-        c = Character()
+    def collect_model(self) -> Character:
+        model = Character()
 
         for k, w in self.bindings.items():
             value = w.currentText() if isinstance(w, QComboBox) else w.text()
-            setattr(c, k, value)
+            setattr(model, k, value)
 
-        c.tags = [t.strip() for t in self.tag_input.text().split(",") if t.strip()]
+        model.tags = [t.strip() for t in self.tag_input.text().split(",") if t.strip()]
 
-        c.summary = self.edit_summary.toPlainText()
-        c.appearance = self.edit_appearance.toPlainText()
-        c.personality = self.edit_personality.toPlainText()
-        c.ability = self.edit_ability.toPlainText()
+        model.summary = self.edit_summary.toPlainText()
+        model.appearance = self.edit_appearance.toPlainText()
+        model.personality = self.edit_personality.toPlainText()
+        model.ability = self.edit_ability.toPlainText()
 
-        c.stories = self.story_blocks
-        c.image = self.image_path
-        # c.x_file = self.x_file
+        model.stories = self.story_blocks
+        model.image = self.model_image_path
 
-        if isinstance(self.x_file, dict):
-            c.x_file = self.x_file
+        if isinstance(self.xfile_model, dict):
+            model.x_file = self.xfile_model
         else:
-            c.x_file = None
+            model.x_file = None
 
-        return c
-
+        return model
+    
     # Auto-save
     def _setup_autosave(self):
         self.autosave_timer = QTimer(self)
@@ -603,7 +626,7 @@ class CharacterEditorDialog(QDialog):
 
     # 自动保存草稿
     def _autosave_draft(self):
-        self.session.character = self.collect_character()
+        self.session.character = self.collect_model()
         self.session.autosave()   
 
     # 清除自动保存草稿
@@ -612,12 +635,11 @@ class CharacterEditorDialog(QDialog):
         if draft_path.exists():
             draft_path.unlink()
 
-    def _sync_dirty_state(self):
-        c = self.collect_character()
+    def _update_dirty_state(self):
+        model = self.collect_model()
         snapshot = self.session._make_snapshot()
         self.session.mark_dirty_if_needed(snapshot)
         self.save_btn.setEnabled(self.session.is_dirty())
-
 
     # 关闭窗口时 Dirty 提示
     def closeEvent(self, event):
@@ -656,7 +678,7 @@ class CharacterEditorDialog(QDialog):
             return
 
         data = json.load(open(file, encoding="utf-8"))
-        self.current_json_path = file
+        self.current_path = file
 
         c = Character()
         for k in self.bindings:
@@ -671,7 +693,7 @@ class CharacterEditorDialog(QDialog):
         c.image = data.get("image")
         c.x_file = data.get("x_file")
 
-        self.load_character(c)
+        self.load_model(c)
 
         self.status.success(f"Import successful：{Path(file).name}")
 
@@ -685,32 +707,29 @@ class CharacterEditorDialog(QDialog):
                 a["content"] = a["content"].replace("\r\n", "\n")
 
     def save_json(self):
-        c = self.collect_character()
+        model = self.collect_model()
 
-        # ★ 核心：规范化 XFile image 路径
-        self._normalize_xfile_image_path(c.x_file)
-        self._normalize_xfile_archives(c.x_file)
+        self._normalize_xfile_image_path(model.x_file)
+        self._normalize_xfile_archives(model.x_file)
 
         file, _ = QFileDialog.getSaveFileName(self, "Save", "", "JSON (*.json)")
         if not file:
             return
 
-        self._write_character_json(file, c)
+        self._write_model_json(file, model)
 
-        self.current_json_path = file
+        self.current_path = file
 
-        self.session.character = c
+        self.session.character = model
         self.session.reset_dirty()
         self.session.clear_autosave()
-        
-        # ★ 通知外部
+
         self.character_saved.emit(file)
 
         self.status.success(f"Save → {file}")
 
-
     def on_confirm(self):
-        if not self.current_json_path:
+        if not self.current_path:
             QMessageBox.information(
                 self,
                 "No File",
@@ -719,19 +738,19 @@ class CharacterEditorDialog(QDialog):
             self.status.warning("CONFIRM failed：")
             return
 
-        c = self.collect_character()
+        c = self.collect_model()
 
-        self._write_character_json(self.current_json_path, c)
+        self._write_model_json(self.current_path, c)
 
         self.session.character = c
         self.session.reset_dirty()
         self.session.clear_autosave()
 
         # ★ 通知外部
-        self.character_saved.emit(self.current_json_path)
+        self.character_saved.emit(self.current_path)
 
         self.status.success(
-            f"Confirm saved：{self.current_json_path}"
+            f"Confirm saved：{self.current_path}"
         )
 
 
@@ -743,12 +762,12 @@ class CharacterEditorDialog(QDialog):
             return
 
         img = x_file.get("image")
-        if not img or not self.current_json_path:
+        if not img or not self.current_path:
             return
 
         try:
             img_path = Path(img)
-            json_dir = Path(self.current_json_path).parent
+            json_dir = Path(self.current_path).parent
 
             # 如果是绝对路径 → 转成相对路径
             if img_path.is_absolute():
@@ -772,12 +791,12 @@ class CharacterEditorDialog(QDialog):
             return
 
         # —— 清空编辑器 Session 状态 ——
-        self.current_json_path = None
-        self.image_path = None
+        self.current_path = None
+        self.model_image_path = None
         self.story_blocks = []
 
         # —— 清空 UI（包含所有外部导入内容）——
-        self.load_character(Character())
+        self.load_model(Character())
 
         # —— 重建基线快照，回到干净状态 ——
         self.session.reset_dirty()
@@ -789,7 +808,7 @@ class CharacterEditorDialog(QDialog):
     # image and story import
     # --------------------------------------------------
 
-    def import_image(self):
+    def _import_image(self):
         file, _ = QFileDialog.getOpenFileName(
             self,
             "Image",
@@ -816,7 +835,7 @@ class CharacterEditorDialog(QDialog):
             )
         )
 
-        self._sync_dirty_state()
+        self._update_dirty_state()
 
 
     def import_story(self):
@@ -832,27 +851,27 @@ class CharacterEditorDialog(QDialog):
             self.story_blocks = parse_story_file(text)
             self.story_label.setText(f"{len(self.story_blocks)} stories imported")
         
-        self._sync_dirty_state()
+        self._update_dirty_state()
 
     # --------------------------------------------------
     # 内部方法
     # --------------------------------------------------
 
     # 写文件入口
-    def _write_character_json(self, path: str, c: Character):
-        data = c.__dict__.copy()
+    def _write_model_json(self, path: str, model: Character):
+        data = model.__dict__.copy()
         data["_type"] = "character"
         data["_schema_version"] = 1
 
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
-
+            
     def open_xfile(self):
         dlg = XFileDialog(
-            x_file=self.x_file,
+            model=self.xfile_model,
             parent=self
         )
 
         if dlg.exec():
-            self.x_file = dlg.result()
-            self._sync_dirty_state()
+            self.xfile_model = dlg.get_model()
+            self._update_dirty_state()

@@ -11,21 +11,23 @@ from pathlib import Path
 from app.ui.panels.xfile_reader import XFileArchivePreview
 from app.utils.text_reader import read_text_safely
 
+
 class XFileDialog(QDialog):
-    def __init__(self, x_file: dict | None = None, parent=None):
+    def __init__(self, model: dict | None = None, parent=None):  # ✅ x_file → model
         super().__init__(parent)
 
         self.setWindowTitle("X File")
         self.resize(720, 800)
 
-        if x_file is None:
-            self.x_file = {
+        # ✅ self.x_file → self.model
+        if model is None:
+            self.model = {
                 "image": None,
                 "fields": {},
                 "archives": []
             }
         else:
-            self.x_file = x_file
+            self.model = model
 
         root = QVBoxLayout(self)
         root.setSpacing(12)
@@ -35,7 +37,7 @@ class XFileDialog(QDialog):
         root.addLayout(self._build_bottom_toolbar())
 
     # --------------------------------------------------
-    # Toolbar (Editor aligned)
+    # Toolbar
     # --------------------------------------------------
     def _build_toolbar(self):
         bar = QHBoxLayout()
@@ -65,7 +67,7 @@ class XFileDialog(QDialog):
         return area
 
     # --------------------------------------------------
-    # Meta Area (Avatar + Fields)
+    # Meta Area
     # --------------------------------------------------
     def _build_meta_area(self):
         row = QHBoxLayout()
@@ -79,11 +81,11 @@ class XFileDialog(QDialog):
 
         return row
 
-
     # --------------------------------------------------
     # Avatar
     # --------------------------------------------------
     def _build_avatar_card(self):
+        '''
         card = QGroupBox()
         card.setProperty("class", "card")
 
@@ -93,6 +95,19 @@ class XFileDialog(QDialog):
         layout = QVBoxLayout(card)
         layout.setContentsMargins(12, 12, 12, 12)
         layout.setSpacing(8)
+        '''
+
+        card = QWidget()
+        card.setProperty("class", "card")
+        card.setFixedWidth(300)
+
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(10)
+
+        # =================
+        # Image
+        # =================
 
         self.image_label = QLabel("No Image\nClick Import")
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -101,16 +116,16 @@ class XFileDialog(QDialog):
 
         self._refresh_image()
 
-        img_btn = QPushButton("Import Image")
-        img_btn.setFixedHeight(28)
-        img_btn.clicked.connect(self._set_image)
+        import_btn = QPushButton("Import Image")
+        # img_btn.setFixedHeight(28)
+        import_btn.clicked.connect(self._import_image)  # ✅ _set_image → _import_image
+        import_btn.setFixedHeight(28)
 
         layout.addWidget(self.image_label)
-        layout.addWidget(img_btn)
+        layout.addWidget(import_btn)
         layout.addStretch()
 
         return card
-
 
     # --------------------------------------------------
     # Fields
@@ -118,8 +133,6 @@ class XFileDialog(QDialog):
     def _build_fields_card(self):
         card = QGroupBox("✦ X Biography")
         card.setProperty("class", "card")
-
-        # 和 avatar 同高
         card.setFixedHeight(360)
 
         wrap = QVBoxLayout(card)
@@ -131,7 +144,8 @@ class XFileDialog(QDialog):
 
         wrap.addLayout(grid)
 
-        self.fields = {}
+        # ✅ self.fields → self.field_bindings
+        self.field_bindings = {}
 
         labels = [
             ("real_name", "S1"),
@@ -150,31 +164,28 @@ class XFileDialog(QDialog):
 
             edit = QTextEdit()
             edit.setAcceptRichText(False)
-            edit.setPlainText(self.x_file["fields"].get(key, ""))
+            edit.setPlainText(self.model["fields"].get(key, ""))  # ✅ self.x_file → self.model
             edit.setProperty("class", "editorField")
 
-            # 关键：允许撑满
             edit.setSizePolicy(
                 QSizePolicy.Policy.Expanding,
                 QSizePolicy.Policy.Expanding
             )
 
-            self.fields[key] = edit
+            self.field_bindings[key] = edit  # ✅ 字段绑定统一命名
 
             grid.addWidget(lab, row, 0)
             grid.addWidget(edit, row, 1)
 
-            # 🌸 每一行等分高度
             grid.setRowStretch(row, 1)
 
-        # label 列最小，输入列吃满
         grid.setColumnStretch(0, 0)
         grid.setColumnStretch(1, 1)
 
         return card
 
     # --------------------------------------------------
-    # Content Area (Archives)
+    # Archives
     # --------------------------------------------------
     def _build_content_area(self):
         panel = QGroupBox("Secret Archives")
@@ -183,13 +194,11 @@ class XFileDialog(QDialog):
         wrap = QVBoxLayout(panel)
         wrap.setSpacing(8)
 
-        # ===== Archive list =====
         self.archive_list = QListWidget()
         self.archive_list.setObjectName("archiveList")
         self._refresh_archives()
         self.archive_list.itemDoubleClicked.connect(self._open_archive)
 
-        # ===== bottom toolbar =====
         toolbar = QHBoxLayout()
 
         delete_btn = QPushButton("Delete")
@@ -207,8 +216,6 @@ class XFileDialog(QDialog):
 
         return panel
 
-    # ---------------------------------------------------
-
     # --------------------------------------------------
     # Bottom Toolbar
     # --------------------------------------------------
@@ -217,7 +224,7 @@ class XFileDialog(QDialog):
         row.addStretch()
 
         save = QPushButton("Save X File")
-        save.clicked.connect(self._on_save)
+        save.clicked.connect(self._save_model)  # ✅ _on_save → _save_model
 
         cancel = QPushButton("Cancel")
         cancel.clicked.connect(self.reject)
@@ -230,16 +237,16 @@ class XFileDialog(QDialog):
     # --------------------------------------------------
     # Image
     # --------------------------------------------------
-    def _set_image(self):
+    def _import_image(self):  # ✅ 重命名
         file, _ = QFileDialog.getOpenFileName(
             self, "Select Image", "", "Images (*.png *.jpg *.jpeg *.webp)"
         )
         if file:
-            self.x_file["image"] = file
+            self.model["image"] = file  # ✅ self.x_file → self.model
             self._refresh_image()
 
     def _refresh_image(self):
-        path = self.x_file.get("image")
+        path = self.model.get("image")  # ✅ self.x_file → self.model
         if path and Path(path).exists():
             pix = QPixmap(path)
             self.image_label.setPixmap(
@@ -251,7 +258,7 @@ class XFileDialog(QDialog):
             )
 
     # --------------------------------------------------
-    # Archives
+    # Archive Logic
     # --------------------------------------------------
     def _import_archive(self):
         file, _ = QFileDialog.getOpenFileName(
@@ -265,21 +272,20 @@ class XFileDialog(QDialog):
 
         text = read_text_safely(file)
 
-        self.x_file["archives"].append({
+        self.model["archives"].append({  # ✅ self.x_file → self.model
             "title": Path(file).stem,
             "content": text
         })
 
         self._refresh_archives()
 
-
     def _refresh_archives(self):
         self.archive_list.clear()
-        for a in self.x_file["archives"]:
+        for a in self.model["archives"]:  # ✅ self.x_file → self.model
             self.archive_list.addItem(QListWidgetItem(a["title"]))
 
     def _open_archive(self, item):
-        for a in self.x_file["archives"]:
+        for a in self.model["archives"]:  # ✅ self.x_file → self.model
             if a["title"] == item.text():
                 XFileArchivePreview(
                     a.get("title", "Untitled"),
@@ -294,25 +300,22 @@ class XFileDialog(QDialog):
 
         title = item.text()
 
-        self.x_file["archives"] = [
-            a for a in self.x_file["archives"]
+        self.model["archives"] = [  # ✅ self.x_file → self.model
+            a for a in self.model["archives"]
             if a.get("title") != title
         ]
 
         self._refresh_archives()
 
-
-    # ---------------------------------------------------
-
     # --------------------------------------------------
     # Save
     # --------------------------------------------------
-    def _on_save(self):
-        self.x_file["fields"] = {
+    def _save_model(self):  # ✅ 重命名
+        self.model["fields"] = {
             k: v.toPlainText()
-            for k, v in self.fields.items()
+            for k, v in self.field_bindings.items()  # ✅ self.fields → self.field_bindings
         }
         self.accept()
 
-    def result(self) -> dict:
-        return self.x_file
+    def get_model(self) -> dict:  # ✅ result() → get_model()
+        return self.model
