@@ -1,5 +1,128 @@
-# app/ui/editor_session.py
+# app/ui/characterEditor/editor_session.py
 
+from pathlib import Path
+import json
+
+from app.domain.character import Character
+
+
+class EditorSession:
+    """
+    角色编辑会话状态（UI 无关）
+    """
+
+    AUTOSAVE_PATH = Path(
+        "app/drafts/character_editor_autosave.json"
+    )
+
+    def __init__(self):
+
+        self.current_path: str | None = None
+
+        self._baseline_snapshot: dict = {}
+
+        self._dirty: bool = False
+
+    # ==========================
+    # state
+    # ==========================
+
+    def load_character(
+        self,
+        model: Character,
+        json_path: str | None = None
+    ):
+
+        self.current_path = json_path
+
+        self._baseline_snapshot = (
+            self.make_snapshot(model)
+        )
+
+        self._dirty = False
+
+    def update_snapshot(
+        self,
+        model: Character
+    ):
+
+        snapshot = self.make_snapshot(model)
+
+        self._dirty = (
+            snapshot != self._baseline_snapshot
+        )
+
+    def reset_dirty(
+        self,
+        model: Character
+    ):
+
+        self._baseline_snapshot = (
+            self.make_snapshot(model)
+        )
+
+        self._dirty = False
+
+    def is_dirty(self) -> bool:
+        return self._dirty
+
+    # ==========================
+    # snapshot
+    # ==========================
+
+    def make_snapshot(
+        self,
+        model: Character
+    ) -> dict:
+
+        return {
+            **model.to_dict(),
+            "image": model.image or None,
+            "stories": model.stories or [],
+        }
+
+    # ==========================
+    # autosave
+    # ==========================
+
+    def autosave(
+        self,
+        model: Character
+    ):
+
+        if not self._dirty:
+            return
+
+        self.AUTOSAVE_PATH.parent.mkdir(
+            parents=True,
+            exist_ok=True
+        )
+
+        data = model.to_dict()
+
+        data["_type"] = "autosave"
+        data["source"] = "autosave"
+
+        with open(
+            self.AUTOSAVE_PATH,
+            "w",
+            encoding="utf-8"
+        ) as f:
+
+            json.dump(
+                data,
+                f,
+                ensure_ascii=False,
+                indent=2
+            )
+
+    def clear_autosave(self):
+
+        if self.AUTOSAVE_PATH.exists():
+            self.AUTOSAVE_PATH.unlink()
+
+
+'''
 from pathlib import Path
 import json
 from app.domain.character import Character
@@ -72,3 +195,4 @@ class EditorSession:
     def clear_autosave(self):
         if self.AUTOSAVE_PATH.exists():
             self.AUTOSAVE_PATH.unlink()
+'''

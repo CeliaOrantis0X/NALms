@@ -5,7 +5,7 @@ import html
 
 def render_markdown_for_qt(text: str) -> str:
     """
-    将“小说 / 素材型 Markdown 文本”
+    将“素材型 Markdown 文本”
     转换为 Qt QTextEdit 100% 可控的 HTML。
 
     - 强制段落 <p>
