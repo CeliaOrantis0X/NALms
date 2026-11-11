@@ -12,6 +12,7 @@ from PyQt6.QtGui import QPixmap
 
 from app.ui.characterEditor.editor import CharacterEditorDialog
 from app.ui.panels.xfile_reader import XFileArchiveReader
+from app.utils.paths import resolve_asset
 # from app.utils.text_render import render_markdown_for_qt
 
 class CharacterReaderDialog(QDialog):
@@ -64,8 +65,8 @@ class CharacterReaderDialog(QDialog):
         avatar.setFixedHeight(300)
 
         if self.character.image:
-            img_path = Path(self.character.image)
-            if img_path.exists():
+            img_path = resolve_asset(self.character.image, self._base_dir())
+            if img_path is not None and img_path.exists():
                 pix = QPixmap(str(img_path))
                 if not pix.isNull():
                     avatar.setPixmap(
@@ -250,10 +251,15 @@ class CharacterReaderDialog(QDialog):
     # --------------------------------------------------
     # XFILE
     # --------------------------------------------------
+    def _base_dir(self):
+        """角色 JSON 所在目录（注意：是目录，不是 JSON 文件路径）。"""
+        return Path(self.json_path).parent if self.json_path else None
+
     def _open_xfile_reader(self):
+        base = self._base_dir()
         dlg = XFileArchiveReader(
             x_file=self.character.x_file,
-            base_dir=self.json_path,
+            base_dir=str(base) if base else "",
             parent=self
         )
         dlg.exec()
@@ -263,10 +269,13 @@ class CharacterReaderDialog(QDialog):
     # --------------------------------------------------
     def open_editor(self):
         dlg = CharacterEditorDialog(self)
-        dlg.load_model(self.character)
 
+        # 必须先设置 current_path 再 load_model：
+        # load_model 要据此解析相对素材路径、并建立脏检测基线
         if self.json_path:
             dlg.current_path = self.json_path
+
+        dlg.load_model(self.character)
 
         main = self.parent()
         if main and hasattr(main, "on_character_saved"):

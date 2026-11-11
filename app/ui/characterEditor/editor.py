@@ -10,6 +10,8 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QPixmap, QImageReader
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from pathlib import Path
+import copy
+import logging
 
 from app.ui.characterEditor.editor_status import EditorStatus
 from app.domain.character import Character
@@ -19,6 +21,8 @@ from app.infrastructure.repository import Repository
 from app.application.character_mapper import CharacterMapper
 from app.ui.characterEditor.field_schema import BIO_FIELDS
 from app.utils.story_parser import parse_story_file
+from app.utils.text_reader import read_text_safely
+from app.utils.paths import absolutize
 
 from app.ui.panels.profile_panel import build_profile_card
 from app.ui.panels.bio_panel import build_bio_panel
@@ -358,7 +362,25 @@ class CharacterEditorDialog(QDialog):
     # data <-> ui
     # --------------------------------------------------
 
+    def _base_dir(self):
+        """当前角色 JSON 所在目录；新建 / 尚未保存时为 None。"""
+        return Path(self.current_path).parent if self.current_path else None
+
+    def _clear_avatar(self):
+        self.avatar.clear()
+        self.avatar.setText("No Image\nClick Import")
+
     def load_model(self, model: Character):
+        # 深拷贝：编辑器里的任何改动都不能影响调用方
+        # （主窗口的角色列表、阅读器）持有的同一个对象。
+        model = copy.deepcopy(model)
+
+        # 编辑器内部统一使用绝对路径；写盘时由 Repository.prepare_for_save 转回相对路径
+        base_dir = self._base_dir()
+        model.image = absolutize(model.image, base_dir)
+        if isinstance(model.x_file, dict):
+            model.x_file["image"] = absolutize(model.x_file.get("image"), base_dir)
+
         self._loading = True
 
         try:
@@ -373,27 +395,13 @@ class CharacterEditorDialog(QDialog):
 
             self.model_image_path = model.image
 
-            if model.image and Path(model.image).exists():
-                if not load_image_to_label(
-                    self.avatar,
-                    model.image
-                ):
-                    self.avatar.clear()
-
-            '''
-            if model.image and Path(model.image).exists():
-                pix = QPixmap(model.image)
-                if not pix.isNull():
-                    self.avatar.setPixmap(
-                        pix.scaled(
-                            self.avatar.size(),
-                            Qt.AspectRatioMode.KeepAspectRatio,
-                            Qt.TransformationMode.SmoothTransformation
-                        )
-                    )
-            else:
-                self.avatar.clear()
-            '''
+            # 没有图片 / 图片读取失败时也要清掉旧头像，
+            # 否则 RESET 或切换到无头像角色后仍显示上一个人的图
+            if not (
+                model.image
+                and load_image_to_label(self.avatar, model.image)
+            ):
+                self._clear_avatar()
 
         finally:
             self._loading = False
@@ -415,11 +423,13 @@ class CharacterEditorDialog(QDialog):
 
     # 自动保存草稿
     def _autosave_draft(self):
-        model = self.collect_model()
-
-        self.session.autosave(model)
-        # self.session.character = self.collect_model()
-        # self.session.autosave()
+        # 定时器回调里的异常会落到全局异常钩子并弹窗；
+        # 自动保存是后台行为，失败只记日志，不打扰用户。
+        try:
+            model = self.collect_model()
+            self.session.autosave(model)
+        except Exception:
+            logging.exception("autosave failed")
 
     # 清除自动保存草稿
     def _clear_autosave_draft(self):
@@ -459,8 +469,11 @@ class CharacterEditorDialog(QDialog):
         clicked = box.clickedButton()
 
         if clicked == save_btn:
-            self.save_json()
-            event.accept()
+            # 用户在“另存为”里点了取消、或写盘失败时，必须留在编辑器里
+            if self.save_json():
+                event.accept()
+            else:
+                event.ignore()
         elif clicked == discard_btn:
             event.accept()
         else:
@@ -475,58 +488,78 @@ class CharacterEditorDialog(QDialog):
         if not file:
             return
 
-        c = Repository.load_from_json(file)
+        try:
+            c = Repository.load_from_json(file)
+        except Exception as e:
+            logging.exception("import failed: %s", file)
+            QMessageBox.warning(
+                self,
+                "Import Failed",
+                f"Could not read this file:\n{file}\n\n{e}"
+            )
+            self.status.error(f"Import failed：{Path(file).name}")
+            return
+
+        # 先设置 current_path：load_model 要用它解析相对素材路径
         self.current_path = file
 
         self.load_model(c)
 
         self.status.success(f"Import successful：{Path(file).name}")
 
-    def save_json(self):
-        model = self.collect_model()
+    def _write_model(self, model: Character, file: str) -> bool:
+        """
+        写盘。成功返回 True；失败（弹窗提示）返回 False。
+        写的是 model 的副本：prepare_for_save 会把素材路径改成相对路径，
+        不能让它反过来改到界面上的状态。
+        """
+        to_write = copy.deepcopy(model)
 
-        file, _ = QFileDialog.getSaveFileName(self, "Save", "", "JSON (*.json)")
-        if not file:
-            return
-
-        Repository.prepare_for_save(model,file)
-        Repository.save_to_json(file, model)
+        try:
+            Repository.prepare_for_save(to_write, file)
+            Repository.save_to_json(file, to_write)
+        except Exception as e:
+            logging.exception("save failed: %s", file)
+            QMessageBox.critical(
+                self,
+                "Save Failed",
+                f"Could not save:\n{file}\n\n{e}"
+            )
+            self.status.error(f"Save failed：{Path(file).name}")
+            return False
 
         self.current_path = file
 
+        # 基线用 model（绝对路径，与界面状态一致），而不是 to_write（已转相对路径）
         self.session.reset_dirty(model)
         self.session.clear_autosave()
+        self.save_btn.setEnabled(self.session.is_dirty())
 
         self.character_saved.emit(file)
 
         self.status.success(f"Save → {file}")
+        return True
 
-    def on_confirm(self):
+    def save_json(self) -> bool:
+        model = self.collect_model()
+
+        file, _ = QFileDialog.getSaveFileName(self, "Save", "", "JSON (*.json)")
+        if not file:
+            return False
+
+        return self._write_model(model, file)
+
+    def on_confirm(self) -> bool:
         if not self.current_path:
             QMessageBox.information(
                 self,
                 "No File",
                 "Please import or create a new file first"
             )
-            self.status.warning("CONFIRM failed：")
-            return
+            self.status.warning("CONFIRM failed：no file selected")
+            return False
 
-        c = self.collect_model()
-
-        Repository.prepare_for_save(c,self.current_path)
-
-        Repository.save_to_json(self.current_path, c)
-
-        # self.session.character = c
-        # self.session.reset_dirty()
-        self.session.reset_dirty(c)
-        self.session.clear_autosave()
-
-        self.character_saved.emit(self.current_path)
-
-        self.status.success(
-            f"Confirm saved：{self.current_path}"
-        )
+        return self._write_model(self.collect_model(), self.current_path)
 
     # --------------------------------------------------
     # reset editor
@@ -548,10 +581,9 @@ class CharacterEditorDialog(QDialog):
         self.story_blocks = []
 
         # —— 清空 UI（包含所有外部导入内容）——
+        # load_model 内部会重建脏检测基线、回到干净状态。
+        # 不要再单独调用 session.reset_dirty()：它需要 model 参数，无参调用会 TypeError。
         self.load_model(Character())
-
-        # —— 重建基线快照，回到干净状态 ——
-        self.session.reset_dirty()
         self.save_btn.setEnabled(False)
 
         self.status.warning("Editor has been reset")
@@ -615,16 +647,12 @@ class CharacterEditorDialog(QDialog):
 
     def import_story(self):
         file, _ = QFileDialog.getOpenFileName(self, "Story", "", "Text (*.txt *.md)")
-        if file:
-            try:
-                text = Path(file).read_text(encoding="utf-8")
-            except UnicodeDecodeError:
-                try:
-                    text = Path(file).read_text(encoding="gbk")
-                except UnicodeDecodeError:
-                    text = Path(file).read_text(encoding="utf-8", errors="replace")
-            self.story_blocks = parse_story_file(text)
-            self.story_label.setText(f"{len(self.story_blocks)} stories imported")
+        if not file:
+            return
+
+        # parse_story_file 返回 list[dict]，可直接 JSON 序列化
+        self.story_blocks = parse_story_file(read_text_safely(file))
+        self.story_label.setText(f"{len(self.story_blocks)} stories imported")
 
         self._update_dirty_state()
 
@@ -636,7 +664,8 @@ class CharacterEditorDialog(QDialog):
     def open_xfile(self):
         dlg = XFileDialog(
             model=self.xfile_model,
-            parent=self
+            parent=self,
+            base_dir=self._base_dir()
         )
 
         if dlg.exec():

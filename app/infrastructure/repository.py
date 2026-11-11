@@ -1,8 +1,11 @@
 # app/infrastructure/repository.py
 
 import json
+import os
 from pathlib import Path
+
 from app.domain.character import Character
+from app.utils.paths import to_stored_path
 
 
 class Repository:
@@ -15,76 +18,58 @@ class Repository:
         with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        c = Character()
+        if not isinstance(data, dict):
+            raise ValueError("JSON root must be an object")
 
-        for k in Character().__dict__.keys():
-            if k in data:
-                setattr(c, k, data[k])
-
-        c.tags = data.get("tags", [])
-        c.summary = data.get("summary", "")
-        c.appearance = data.get("appearance", "")
-        c.personality = data.get("personality", "")
-        c.ability = data.get("ability", "")
-        c.stories = data.get("stories", [])
-        c.image = data.get("image")
-        c.x_file = data.get("x_file")
-
-        return c
+        # 唯一的反序列化入口：与主窗口扫描目录时走同一条路径
+        return Character.from_dict(data)
 
     # =========================
     # Save
     # =========================
     @staticmethod
     def save_to_json(file_path: str, model: Character):
-        data = model.__dict__.copy()
+        # 唯一的序列化入口：不再把 _filename/_filepath 等私有字段写进文件
+        payload = json.dumps(
+            model.to_dict(),
+            ensure_ascii=False,
+            indent=2
+        )
 
-        data["_type"] = "character"
-        data["_schema_version"] = 1
+        # 先在内存里完成序列化，再写临时文件、最后原子替换：
+        # 序列化失败或写盘中断时，原文件保持原样，不会被截断成半截 JSON。
+        tmp = Path(str(file_path) + ".tmp")
 
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+        try:
+            tmp.write_text(payload, encoding="utf-8")
+            os.replace(tmp, file_path)
+        except Exception:
+            try:
+                tmp.unlink()
+            except OSError:
+                pass
+            raise
 
     @staticmethod
     def prepare_for_save(model, current_path: str | None):
+        """
+        写盘前整理：素材路径转成相对 JSON 所在目录的路径。
+        会修改传入的 model —— 调用方应传入副本，不要传编辑器正在用的对象。
+        """
+        if current_path:
+            base_dir = Path(current_path).parent
 
-        Repository._normalize_xfile_image_path(
-            model.x_file,
-            current_path
-        )
+            model.image = to_stored_path(model.image, base_dir)
+
+            if isinstance(model.x_file, dict):
+                model.x_file["image"] = to_stored_path(
+                    model.x_file.get("image"),
+                    base_dir
+                )
 
         Repository._normalize_xfile_archives(
             model.x_file
         )
-
-
-    @staticmethod
-    def _normalize_xfile_image_path(
-        x_file: dict | None,
-        current_path: str | None
-    ):
-        if not x_file:
-            return
-
-        img = x_file.get("image")
-
-        if not img or not current_path:
-            return
-
-        try:
-            img_path = Path(img)
-
-            json_dir = Path(current_path).parent
-
-            # 绝对路径转相对路径
-            if img_path.is_absolute():
-                x_file["image"] = str(
-                    img_path.relative_to(json_dir)
-                )
-
-        except Exception:
-            pass
-
 
     @staticmethod
     def _normalize_xfile_archives(
@@ -93,7 +78,10 @@ class Repository:
         if not x_file:
             return
 
-        for archive in x_file.get("archives", []):
+        for archive in x_file.get("archives") or []:
+
+            if not isinstance(archive, dict):
+                continue
 
             content = archive.get("content")
 

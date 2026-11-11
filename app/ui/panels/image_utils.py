@@ -6,6 +6,8 @@ from PyQt6.QtWidgets import QFileDialog, QMessageBox, QLabel
 from PyQt6.QtGui import QPixmap, QImageReader
 from PyQt6.QtCore import Qt
 
+from app.utils.paths import resolve_asset
+
 
 # ==================================================
 # image file dialog
@@ -63,16 +65,17 @@ def apply_preview_image(
 
 def load_image_to_label(
     label: QLabel,
-    file: str
+    file: str,
+    base_dir=None
 ) -> bool:
 
-    if not file:
+    # 相对路径按 base_dir（JSON 所在目录）解析，而不是当前工作目录
+    path = resolve_asset(file, base_dir)
+
+    if path is None or not path.exists():
         return False
 
-    if not Path(file).exists():
-        return False
-
-    pixmap = load_image(file)
+    pixmap = load_image(str(path))
 
     if pixmap is None:
         return False

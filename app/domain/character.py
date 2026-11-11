@@ -4,6 +4,11 @@ import copy
 class Character:
     SCHEMA_VERSION = 1
 
+    # 属于“元数据/历史遗留”的键：读取时忽略，写出时由 to_dict 重新生成
+    _META_KEYS = frozenset({
+        "_type", "_schema_version", "_filename", "_filepath",
+    })
+
     def __init__(self):
         self.id = ""
         self.name = ""
@@ -40,6 +45,10 @@ class Character:
 
         self.x_file: dict | None = None
 
+        # 模型暂不认识的字段（新版本写入、手工添加等）。
+        # 读取时收集，保存时原样写回，避免“往返一次就丢字段”。
+        self.extra: dict = {}
+
     # ==========================
     # serialization
     # ==========================
@@ -48,9 +57,13 @@ class Character:
         data = {}
 
         for k, v in self.__dict__.items():
-            if k.startswith("_"):
+            if k.startswith("_") or k == "extra":
                 continue
             data[k] = v
+
+        # 未知字段：不覆盖已知字段
+        for k, v in self.extra.items():
+            data.setdefault(k, v)
 
         data["_type"] = "character"
         data["_schema_version"] = self.SCHEMA_VERSION
@@ -60,12 +73,19 @@ class Character:
     def from_dict(cls, data: dict) -> "Character":
         c = cls()
 
+        known = {
+            k for k in c.__dict__
+            if not k.startswith("_") and k != "extra"
+        }
+
         # ===== 基础字段 =====
         for key, value in data.items():
             if key == "x_file":
                 continue
-            if hasattr(c, key):
+            if key in known:
                 setattr(c, key, value)
+            elif key not in cls._META_KEYS:
+                c.extra[key] = copy.deepcopy(value)
 
         # ===== X FILE =====
         raw_x = data.get("x_file")

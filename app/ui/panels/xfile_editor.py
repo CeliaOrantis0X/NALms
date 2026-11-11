@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap
 from pathlib import Path
+import copy
 
 from app.ui.panels.xfile_reader import XFileArchivePreview
 from app.utils.text_reader import read_text_safely
@@ -17,21 +18,27 @@ from app.ui.panels.image_utils import (
 
 
 class XFileDialog(QDialog):
-    def __init__(self, model: dict | None = None, parent=None):  # x_file → model
+    def __init__(self, model: dict | None = None, parent=None, base_dir=None):  # x_file → model
         super().__init__(parent)
 
         self.setWindowTitle("X File")
         self.resize(720, 800)
 
+        # 相对图片路径的解析基准（角色 JSON 所在目录）
+        self.base_dir = base_dir
+
+        # 深拷贝：对话框内的改动只有点 "Save X File" 后才会通过 get_model() 交回，
+        # 点 Cancel 不会影响调用方持有的字典。
+        # 同时补齐缺失的键，避免手改/旧版 JSON 触发 KeyError。
+        data = copy.deepcopy(model) if isinstance(model, dict) else {}
+        data.setdefault("image", None)
+        if not isinstance(data.get("fields"), dict):
+            data["fields"] = {}
+        if not isinstance(data.get("archives"), list):
+            data["archives"] = []
+
         # self.x_file → self.model
-        if model is None:
-            self.model = {
-                "image": None,
-                "fields": {},
-                "archives": []
-            }
-        else:
-            self.model = model
+        self.model = data
 
         root = QVBoxLayout(self)
         root.setSpacing(12)
@@ -238,7 +245,8 @@ class XFileDialog(QDialog):
 
         ok = load_image_to_label(
             self.image_label,
-            file
+            file,
+            self.base_dir
         )
 
         if not ok:
@@ -255,7 +263,8 @@ class XFileDialog(QDialog):
 
         load_image_to_label(
             self.image_label,
-            self.model.get("image")
+            self.model.get("image"),
+            self.base_dir
         )
 
     '''

@@ -18,6 +18,7 @@ from app.ui.characterEditor.editor import CharacterEditorDialog
 from app.domain.character import Character
 from app.ui.characterEditor.profile_reader import CharacterReaderDialog
 from app.ui.theme_manager import ThemeManager
+from app.utils.paths import resolve_asset
 
 
 def highlight(text: str, keyword: str) -> str:
@@ -169,10 +170,13 @@ class CharacterListItem(QWidget):
 
     def _set_avatar(self, character):
         size = self.MIN_AVATAR_SIZE
-        avatar_path = getattr(character, "image", None)
+        # 相对路径按角色 JSON 所在目录解析（_source_path 由扫描目录时写入）
+        source = getattr(character, "_source_path", None)
+        base_dir = os.path.dirname(source) if source else None
+        avatar_path = resolve_asset(getattr(character, "image", None), base_dir)
 
-        if avatar_path and os.path.isfile(avatar_path):
-            pix = QPixmap(avatar_path)
+        if avatar_path is not None and avatar_path.is_file():
+            pix = QPixmap(str(avatar_path))
             if not pix.isNull():
                 # 以宽度为基准缩放，保证上部在上方
                 scale = size / pix.width()
