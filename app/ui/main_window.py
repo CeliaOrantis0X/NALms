@@ -3,7 +3,7 @@
 # Version 2.0
 
 import os
-import json
+import logging
 
 from PyQt6.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout,
@@ -16,6 +16,7 @@ from PyQt6.QtGui import QPixmap, QPainter, QColor, QBrush
 
 from app.ui.characterEditor.editor import CharacterEditorDialog
 from app.domain.character import Character
+from app.infrastructure.repository import Repository
 from app.ui.characterEditor.profile_reader import CharacterReaderDialog
 from app.ui.theme_manager import ThemeManager
 from app.utils.paths import resolve_asset
@@ -360,38 +361,22 @@ class MainWindow(QWidget):
         self.refresh_cards(self.characters)
 
     def load_characters_from_folder(self, folder: str):
+        # 读取、版本迁移、非角色 JSON 的过滤，统一交给 Repository
+        result = Repository.scan_folder(folder)
+
+        for path, reason in result.skipped:
+            logging.warning("skipped character file %s: %s", path, reason)
+
+        # 留给界面以后提示“有 N 个文件没能读取”
+        self.skipped_files = result.skipped
+
         self.characters.clear()
+        self.characters.extend(result.characters)
+
         self.search_index.clear()
-
-        for root, dirs, files in os.walk(folder):
-            # 可选：跳过隐藏文件夹 / 特殊目录
-            dirs[:] = [
-                d for d in dirs
-                if not d.startswith(".") and not d.startswith("_")
-            ]
-
-            for filename in files:
-                if not filename.endswith(".json"):
-                    continue
-                if filename.startswith("_") or filename.startswith("."):
-                    continue
-
-                path = os.path.join(root, filename)
-
-                try:
-                    with open(path, "r", encoding="utf-8") as f:
-                        data = json.load(f)
-                except Exception:
-                    continue
-
-                if not isinstance(data, dict):
-                    continue
-
-                c = Character.from_dict(data)
-                c._source_path = path
-
-                self.characters.append(c)
-                self.search_index.append(c.searchable_text())
+        self.search_index.extend(
+            c.searchable_text() for c in self.characters
+        )
 
     def apply_search(self):
         if not self.characters:

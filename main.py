@@ -24,7 +24,7 @@ def install_excepthook():
     """
     logging.basicConfig(
         filename=LOG_PATH,
-        level=logging.ERROR,
+        level=logging.WARNING,
         encoding="utf-8",
         format="%(asctime)s %(levelname)s %(message)s",
     )

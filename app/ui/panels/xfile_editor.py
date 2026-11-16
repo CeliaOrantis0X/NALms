@@ -9,6 +9,8 @@ from PyQt6.QtGui import QPixmap
 from pathlib import Path
 import copy
 
+from app.domain.schema import ensure_archive_ids, new_archive_id
+
 from app.ui.panels.xfile_reader import XFileArchivePreview
 from app.utils.text_reader import read_text_safely
 from app.ui.panels.image_utils import (
@@ -36,6 +38,7 @@ class XFileDialog(QDialog):
             data["fields"] = {}
         if not isinstance(data.get("archives"), list):
             data["archives"] = []
+        ensure_archive_ids(data)
 
         # self.x_file → self.model
         self.model = data
@@ -305,6 +308,10 @@ class XFileDialog(QDialog):
         text = read_text_safely(file)
 
         self.model["archives"].append({  # self.x_file → self.model
+            "id": new_archive_id(
+                a.get("id") for a in self.model["archives"]
+                if isinstance(a, dict)
+            ),
             "title": Path(file).stem,
             "content": text
         })
@@ -314,28 +321,32 @@ class XFileDialog(QDialog):
     def _refresh_archives(self):
         self.archive_list.clear()
         for a in self.model["archives"]:  # self.x_file → self.model
-            self.archive_list.addItem(QListWidgetItem(a["title"]))
+            self.archive_list.addItem(
+                QListWidgetItem(a.get("title", "Untitled"))
+            )
 
+    # 列表项与 model["archives"] 一一对应、顺序相同：
+    # 按行号定位，而不是按标题——两份同名档案也不会串
     def _open_archive(self, item):
-        for a in self.model["archives"]:  # self.x_file → self.model
-            if a["title"] == item.text():
-                XFileArchivePreview(
-                    a.get("title", "Untitled"),
-                    a.get("content", ""),
-                    self
-                ).exec()
+        row = self.archive_list.row(item)
+        archives = self.model["archives"]  # self.x_file → self.model
+
+        if 0 <= row < len(archives):
+            a = archives[row]
+            XFileArchivePreview(
+                a.get("title", "Untitled"),
+                a.get("content", ""),
+                self
+            ).exec()
 
     def _delete_archive(self):
-        item = self.archive_list.currentItem()
-        if not item:
+        row = self.archive_list.currentRow()
+        archives = self.model["archives"]  # self.x_file → self.model
+
+        if not (0 <= row < len(archives)):
             return
 
-        title = item.text()
-
-        self.model["archives"] = [  # self.x_file → self.model
-            a for a in self.model["archives"]
-            if a.get("title") != title
-        ]
+        del archives[row]
 
         self._refresh_archives()
 

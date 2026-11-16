@@ -2,10 +2,22 @@
 
 import json
 import os
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from app.domain.character import Character
+from app.domain.schema import ensure_archive_ids, is_character_data
+from app.utils.atomic import atomic_write_text
 from app.utils.paths import to_stored_path
+
+
+@dataclass
+class ScanResult:
+    characters: list = field(default_factory=list)
+
+    # [(文件路径, 原因)]：读不出来 / 版本过新的角色文件。
+    # 属性词库、索引、草稿等“本来就不是角色”的 JSON 不算在内。
+    skipped: list = field(default_factory=list)
 
 
 class Repository:
@@ -13,16 +25,78 @@ class Repository:
     # =========================
     # Load
     # =========================
+    @staticmethod
+    def _read_json(file_path):
+        # utf-8-sig：兼容被 Windows 编辑器加了 BOM 的 JSON
+        with open(file_path, "r", encoding="utf-8-sig") as f:
+            return json.load(f)
+
     @staticmethod #这个方法不依赖实例状态，可以直接通过类调用
     def load_from_json(file_path: str) -> Character:
-        with open(file_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
+        data = Repository._read_json(file_path)
 
         if not isinstance(data, dict):
             raise ValueError("JSON root must be an object")
 
-        # 唯一的反序列化入口：与主窗口扫描目录时走同一条路径
-        return Character.from_dict(data)
+        # 自动保存草稿与角色卡结构相同，允许手动导入来恢复
+        if data.get("_type") == "autosave":
+            data = {k: v for k, v in data.items() if k != "source"}
+            data["_type"] = "character"
+
+        if not is_character_data(data):
+            raise ValueError(
+                "This file is not a NALms character file "
+                "(expected \"_type\": \"character\", or an \"id\" plus character fields)."
+            )
+
+        # 唯一的反序列化入口（含 schema 迁移）
+        c = Character.from_dict(data)
+        c._source_path = str(file_path)
+        return c
+
+    @staticmethod
+    def scan_folder(folder: str) -> ScanResult:
+        """
+        递归读取文件夹下所有角色卡。
+        - 非角色 JSON（词库 / 索引 / 草稿）静默忽略
+        - 损坏或版本过新的角色文件记入 skipped，由调用方决定怎么提示
+        - 顺序确定（按路径排序），不依赖操作系统的遍历顺序
+        """
+        result = ScanResult()
+
+        for root, dirs, files in os.walk(folder):
+            dirs[:] = sorted(
+                d for d in dirs
+                if not d.startswith((".", "_"))
+            )
+
+            for filename in sorted(files):
+                if not filename.lower().endswith(".json"):
+                    continue
+                if filename.startswith((".", "_")):
+                    continue
+
+                path = os.path.join(root, filename)
+
+                try:
+                    data = Repository._read_json(path)
+                except Exception as e:
+                    result.skipped.append((path, f"unreadable: {e}"))
+                    continue
+
+                if not is_character_data(data):
+                    continue
+
+                try:
+                    c = Character.from_dict(data)
+                except Exception as e:
+                    result.skipped.append((path, str(e)))
+                    continue
+
+                c._source_path = path
+                result.characters.append(c)
+
+        return result
 
     # =========================
     # Save
@@ -36,19 +110,9 @@ class Repository:
             indent=2
         )
 
-        # 先在内存里完成序列化，再写临时文件、最后原子替换：
-        # 序列化失败或写盘中断时，原文件保持原样，不会被截断成半截 JSON。
-        tmp = Path(str(file_path) + ".tmp")
-
-        try:
-            tmp.write_text(payload, encoding="utf-8")
-            os.replace(tmp, file_path)
-        except Exception:
-            try:
-                tmp.unlink()
-            except OSError:
-                pass
-            raise
+        # 先在内存里完成序列化，再原子写入：
+        # 序列化失败或写盘中断时，原文件保持原样
+        atomic_write_text(file_path, payload)
 
     @staticmethod
     def prepare_for_save(model, current_path: str | None):
@@ -66,6 +130,9 @@ class Repository:
                     model.x_file.get("image"),
                     base_dir
                 )
+
+        # 保险：任何来路的档案，写盘前都保证有唯一 id
+        ensure_archive_ids(model.x_file)
 
         Repository._normalize_xfile_archives(
             model.x_file

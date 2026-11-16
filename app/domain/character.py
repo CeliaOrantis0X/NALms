@@ -1,8 +1,11 @@
 # 域模型 - 独立角色数据类，便于序列化与扩展
 import copy
 
+from app.domain import schema
+
+
 class Character:
-    SCHEMA_VERSION = 1
+    SCHEMA_VERSION = schema.SCHEMA_VERSION
 
     # 属于“元数据/历史遗留”的键：读取时忽略，写出时由 to_dict 重新生成
     _META_KEYS = frozenset({
@@ -40,8 +43,9 @@ class Character:
         self.stories = []
         self.image = None
 
-        self._filename = ""
-        self._filepath = ""
+        # 来源文件路径：运行时信息，由 Repository 读取时写入；
+        # 以下划线开头，所以不会进入 to_dict / JSON
+        self._source_path: str | None = None
 
         self.x_file: dict | None = None
 
@@ -71,6 +75,9 @@ class Character:
 
     @classmethod
     def from_dict(cls, data: dict) -> "Character":
+        # 所有读入路径都经过迁移：拿到的永远是当前 schema 结构
+        data = schema.migrate(data)
+
         c = cls()
 
         known = {
@@ -136,8 +143,15 @@ class Character:
                     parts.append(s.get("title", ""))
                     parts.append(s.get("content", ""))
 
-        # 4. 兜底：其余字符串字段
-        for v in self.__dict__.values():
+        # 4. 兜底：其余公开的字符串字段（hair_color、gender ...）
+        #    跳过：已在上面收录的字段（避免重复）、私有字段（如来源路径）、图片路径
+        explicit = {
+            "id", "name", "alias", "summary", "appearance", "personality",
+            "ability", "media", "identity", "rank", "partnership",
+        }
+        for k, v in self.__dict__.items():
+            if k in explicit or k.startswith("_") or k == "image":
+                continue
             if isinstance(v, str):
                 parts.append(v)
 

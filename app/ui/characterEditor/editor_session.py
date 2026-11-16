@@ -4,6 +4,7 @@ from pathlib import Path
 import json
 
 from app.domain.character import Character
+from app.utils.atomic import atomic_write_text
 
 
 class EditorSession:
@@ -103,18 +104,15 @@ class EditorSession:
         data["_type"] = "autosave"
         data["source"] = "autosave"
 
-        with open(
+        # 先序列化再原子写入：失败时不会把上一份可用草稿截断
+        atomic_write_text(
             self.AUTOSAVE_PATH,
-            "w",
-            encoding="utf-8"
-        ) as f:
-
-            json.dump(
+            json.dumps(
                 data,
-                f,
                 ensure_ascii=False,
                 indent=2
             )
+        )
 
     def clear_autosave(self):
 

@@ -81,7 +81,7 @@ class XFileArchiveReader(QDialog):
         self.x_file = x_file or {}
         self.base_dir = Path(base_dir) if base_dir else None
 
-        self.archives = self.x_file.get("archives", [])
+        self.archives = self.x_file.get("archives") or []
         self.fields = self.x_file.get("fields", {})
         self.image_path = self.x_file.get("image")
 
@@ -252,10 +252,11 @@ class XFileArchiveReader(QDialog):
             self._show_archive(self.archives[0])
 
     def _open_archive(self, item):
-        for a in self.archives:
-            if a.get("title") == item.text():
-                self._show_archive(a)
-                return
+        # 按行号定位：两份同名档案不会都显示成第一份
+        row = self.list.row(item)
+
+        if 0 <= row < len(self.archives):
+            self._show_archive(self.archives[row])
 
     def _show_archive(self, archive: dict):
         self.archive_title.setText(archive.get("title", ""))
